@@ -1,7 +1,10 @@
-package task;
+package om.self.task.core;
+
+import om.self.task.core.TaskRunner;
+
 import java.util.Hashtable;
 
-public class TaskManager implements Runnable{
+public class TaskManager{
 	private Hashtable<String, TaskRunner> allTaskRunners = new Hashtable<>();
 	private Hashtable<String, TaskRunner> activeTaskRunners = new Hashtable<>();
 
@@ -65,7 +68,6 @@ public class TaskManager implements Runnable{
 		}
 	}
 
-	@Override
 	public void run(){
 		activeTaskRunners.forEach((k, tr) -> {tr.runRaw();});
 	}
@@ -89,6 +91,8 @@ public class TaskManager implements Runnable{
 		else
 			activeTaskRunners.forEach((k, tr) -> {System.out.println(tr.getStatusString(tab, 2));});
 	}
+
+	
 
 	public enum Action{
 		PAUSE,

@@ -1,11 +1,11 @@
-package task;
+package om.self.task.core;
+
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 
-import task.Task.Step;
 
-public class TaskRunner {
+public class TaskRunner{
 	private String name;
 	private TaskManager taskManager;
 	private String containerName;
@@ -15,7 +15,7 @@ public class TaskRunner {
 	private Hashtable<String, Task> allTasks = new Hashtable<>();
 	private Hashtable<String, Task> activeTasks = new Hashtable<>();
 	private LinkedList<Task> queuedTasks = new LinkedList<>();
-	private LinkedList<Step> quedSteps = new LinkedList<>();
+	private LinkedList<Runnable> quedSteps = new LinkedList<>();
 
 	private Task currentQueued;
 	private String defaultTaskName;
@@ -218,7 +218,7 @@ public class TaskRunner {
 		});
 	}
 
-	public void queStep(Step step){
+	public void queStep(Runnable step){
 		quedSteps.add(step);
 	}
 
@@ -256,7 +256,7 @@ public class TaskRunner {
 
 	//---------------Getters---------------//
 	//all task
-	public Hashtable<String,Task> getAllTasks(){
+	public Hashtable<String, Task> getAllTasks(){
 		return allTasks;
 	}
 
@@ -312,7 +312,7 @@ public class TaskRunner {
 	}
 
 	void runRaw(){
-		while(!quedSteps.isEmpty()) quedSteps.remove().apply();
+		while(!quedSteps.isEmpty()) quedSteps.remove().run();
 
 		if(currentQueued == null || currentQueued.isDone()){
 			if(!queuedTasksDone()){

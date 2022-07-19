@@ -1,13 +1,16 @@
-package task;
+package om.self.task.singlethreaded;
 
-public class IncrimentedTask extends TaskEx{
+import om.self.task.singlethreaded.core.TaskEx;
+import om.self.task.core.TaskRunner;
+
+public class IncrementedTask extends TaskEx {
     private int i;
 
-    public IncrimentedTask(String name, TaskRunner taskRunner) {
+    public IncrementedTask(String name, TaskRunner taskRunner) {
         super(name, taskRunner);
     }
 
-    public IncrimentedTask(String name) {
+    public IncrementedTask(String name) {
         super(name);
     }
     
@@ -24,12 +27,12 @@ public class IncrimentedTask extends TaskEx{
         }, end);
     }
 
-    public void addIncrimentedStep(Step step, int start, int incriemnt, int end){
+    public void addIncrementedStep(Step step, int start, int incriemnt, int end){
         addIncrementedStep(step, start, incriemnt, () -> (i >= end));
     }
 
-    public void addIncrimentedStep(Step step, int times){
-        addIncrimentedStep(step, 0, 1, times);
+    public void addIncrementedStep(Step step, int times){
+        addIncrementedStep(step, 0, 1, times);
     }
 
     public int getI(){

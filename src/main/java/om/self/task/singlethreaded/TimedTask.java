@@ -1,4 +1,7 @@
-package task;
+package om.self.task.singlethreaded;
+
+import om.self.task.singlethreaded.core.TaskEx;
+import om.self.task.core.TaskRunner;
 
 public class TimedTask extends TaskEx {
     private long startTime;

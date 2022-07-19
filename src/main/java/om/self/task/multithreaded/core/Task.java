@@ -1,20 +1,21 @@
-package task;
-import java.util.LinkedList;
+package om.self.task.multithreaded.core;
 
-import task.TaskRunner.Action;
+import org.apache.commons.lang3.NotImplementedException;
+
+import java.util.LinkedList;
 
 /**
  * A simple task that will exicute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.  
  */
-public class Task {
+public class Task implements Runnable{
 	private static LinkedList<Task> allTasks = new LinkedList<>();
+	private static boolean logTasks = false;
 
 	private String name;
 	private TaskRunner taskRunner;
 	private String containerName;
 	private Step step;
-	private boolean running;
 
 	/**
 	 * Construtor that sets the name of this task, attaches it to taskRunner with the containerName paramater, and exicutes action once it is attached
@@ -23,7 +24,7 @@ public class Task {
 	 * @param containerName the name used to refrence this task in the TaskRunner
 	 * @param action the action to run once this task has been attached to the TaskRunner
 	 */
-	public Task(String name, TaskRunner taskRunner, String containerName, Action action){
+	public Task(String name, TaskRunner taskRunner, String containerName, TaskRunner.Action action){
 		construct(name, taskRunner, containerName, action);
 	}
 
@@ -33,7 +34,7 @@ public class Task {
 	 * @param taskRunner the TaskRunner you want to attach this task to (containerName will equal name)
 	 */
 	public Task(String name, TaskRunner taskRunner){
-		construct(name, taskRunner, name, Action.NONE);
+		construct(name, taskRunner, name, TaskRunner.Action.NONE);
 	}
 
 	/**
@@ -51,11 +52,11 @@ public class Task {
 	 * @param containerName the name used to refrence this task in the TaskRunner (not used if taskRunner is null)
 	 * @param action the action to run once this task has been attached to the TaskRunner (not used if taskRunner is null)
 	 */
-	private void construct(String name, TaskRunner taskRunner, String containerName, Action action){
+	private void construct(String name, TaskRunner taskRunner, String containerName, TaskRunner.Action action){
 		setName(name);
 		if(taskRunner != null)
 			taskRunner.addTask(containerName, this, action);
-		allTasks.add(this);
+		if(logTasks) allTasks.add(this);
 	}
 
 	/**
@@ -79,6 +80,7 @@ public class Task {
 	 * @param containerName the name used to refrence this task in the TaskRunner
 	 */
 	public void attachTaskRunner(TaskRunner taskRunner, String containerName){
+		//TODO get rid of raw method
 		this.taskRunner = taskRunner;
 		this.containerName = containerName;
 		taskRunner.addTaskRaw(containerName, this);
@@ -94,11 +96,11 @@ public class Task {
 
 	/**
 	 * removes the attached taskRunner from this task and deletes all refrences to this task in taskRunner
-	 * @throws nullPointerException if taskRunner has not been attached
+	 * @throws NullPointerException if taskRunner has not been attached
 	 */
 	public void removeTaskRunner(){
-		taskRunner.runAction(containerName, Action.REMOVE_FROM_QUE);
-		taskRunner.runAction(containerName, Action.PAUSE);
+		taskRunner.runAction(containerName, TaskRunner.Action.REMOVE_FROM_QUE);
+		taskRunner.runAction(containerName, TaskRunner.Action.PAUSE);
 		taskRunner.removeTaskRaw(containerName);
 		this.taskRunner = null;
 		this.containerName = null;
@@ -137,7 +139,7 @@ public class Task {
 	}
 
 	/**
-	 * gets the containerName ()
+	 * gets the containerName (name used by TaskRunner)
 	 * @return
 	 */
 	public String getContainerName(){
@@ -146,14 +148,19 @@ public class Task {
 
 	public void start(){
 		if(isTaskRunnerAttached())
-			taskRunner.addTaskToActiveTasks(containerName, this);
-		running = true;
+			taskRunner.runAction(getContainerName(), TaskRunner.Action.START);
+		//TODO implement logging for no task runner
+		else
+			throw new NotImplementedException("Hey! I'm on vacation, give me some time");
 	}
 
 	public void pause(){
 		if(isTaskRunnerAttached())
 			taskRunner.removeTaskFromActiveTasks(containerName);
-		running = false;
+		//TODO implement logging for no task runner
+		else
+			throw new NotImplementedException("Hey! I'm on vacation, give me some time");
+
 	}
 
 	public void quePause(){
@@ -165,30 +172,30 @@ public class Task {
 	public void restart(){}
 
 	/**
-	 * runs the task without checking if it is running (only use with TaskRunner)
+	 * runs the task
 	 */
-	void runRaw(){
+	@Override
+	public void run(){
 		try{
 			step.apply();
 		}catch(NullPointerException e){
 			System.out.println("Warning null pointer exception thrown by " + this + ". Make sure to set the step!");
 		}
 	}
-
-	/**
-	 * runs the task if it is running
-	 */
-	public void run(){
-		if(running)
-			runRaw();
-	}
 	
 	public boolean isRunning(){
-		return running;
+		if(isTaskRunnerAttached()) {
+			if (taskRunner.getActiveTasks().contains(this))
+				return true;
+		}
+		else
+			//TODO implement logging for no task runner
+			throw new NotImplementedException("Hey! I'm on vacation, give me some time");
+		return false;
 	}
 
 	public boolean isDone(){
-		return !running;
+		return !isRunning();
 	}
 
 	public interface Step{
@@ -201,14 +208,27 @@ public class Task {
 			start += tab;
 		}
 		return start + name + " as " + getClass() + ":\n" + 
-			start + tab +  "Running: " + running;
+			start + tab +  "Running: " + isRunning();
+	}
+
+
+	public void printStatusString(){
+		System.out.println(getStatusString("\t", 0));
+	}
+
+	public static void setTaskLogging(boolean value){
+		logTasks = value;
 	}
 
 	public static LinkedList<Task> getAllTasks(){
+		//if(!logTasks)
+			//Logger.addMessage("while calling Task.getAllTasks(): Task Logging was disabled so tasks may not be stored. \nTo enable task logging call Task.setTaskLogging(true) before making tasks.", Message.Type.WARNING);
 		return allTasks;
 	}
 
 	public static Task getTaskWithName(String name){
+		//if(!logTasks)
+			//System.out.println("WARNING while calling Task.getTaskWithName(): Task Logging was disabled so tasks may not be stored. \nTo enable task logging call Task.setTaskLogging(true) before making tasks.");
 		for(Task t : allTasks)
 			if(t.getName().equals(name))
 				return t;

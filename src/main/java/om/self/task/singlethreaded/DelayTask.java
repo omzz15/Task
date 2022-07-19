@@ -1,6 +1,9 @@
-package task;
+package om.self.task.singlethreaded;
 
-public class DelayTask extends TaskEx{
+import om.self.task.singlethreaded.core.TaskEx;
+import om.self.task.core.TaskRunner;
+
+public class DelayTask extends TaskEx {
     private long delayStart;
 
     public DelayTask(String name){

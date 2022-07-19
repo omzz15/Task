@@ -1,7 +1,10 @@
-package task;
+package om.self.task.multithreaded.core;
+
 import java.util.LinkedList;
 
-public class TaskEx extends Task{	
+//import logger.Message;
+
+public class TaskEx extends Task {
 	private EndPoint end;
 	private LinkedList<Step> steps = new LinkedList<>();
 	private LinkedList<EndPoint> ends = new LinkedList<>();
@@ -77,7 +80,8 @@ public class TaskEx extends Task{
 		setCurrStep(task);
 	}
 
-	void runRaw(){	
+	@Override
+	public void run(){
 		getStep().apply();
 		if(end.apply())
 			setToNextStep();
