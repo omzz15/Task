@@ -1,9 +1,7 @@
-package task;
+package om.self.task.core;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map.Entry;
-
-import task.Task.Step;
 
 public class TaskRunner {
 	private String name;

@@ -1,20 +1,28 @@
-package task;
+package om.self.task.core;
 import java.util.LinkedList;
 
-import task.TaskRunner.Action;
+import om.self.logger.Logger;
+import om.self.logger.Message;
+import om.self.task.core.TaskRunner.Action;
 
 /**
  * A simple task that will exicute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.  
  */
-public class Task {
+public class Task implements Runnable{
+
 	private static LinkedList<Task> allTasks = new LinkedList<>();
 
 	private String name;
 	private TaskRunner taskRunner;
 	private String containerName;
-	private Step step;
-	private boolean running;
+	/**
+	 * the Runnable thing that you want contained inside this task
+	 * <p></p>
+	 * NOTE: this may be run inside a different thread if you are using multithreaded components
+	 */
+	private Runnable action;
+
 
 	/**
 	 * Construtor that sets the name of this task, attaches it to taskRunner with the containerName paramater, and exicutes action once it is attached
@@ -94,7 +102,7 @@ public class Task {
 
 	/**
 	 * removes the attached taskRunner from this task and deletes all refrences to this task in taskRunner
-	 * @throws nullPointerException if taskRunner has not been attached
+	 * @throws NullPointerException if taskRunner has not been attached
 	 */
 	public void removeTaskRunner(){
 		taskRunner.runAction(containerName, Action.REMOVE_FROM_QUE);
@@ -122,18 +130,18 @@ public class Task {
 
 	/**
 	 * sets the step (the function that is run by taskRunner or run()) - setter method for variable step
-	 * @param step the step you want to run
+	 * @param action the action you want to run
 	 */
-	public void setStep(Step step){
-		this.step = step;
+	public void setAction(Runnable action){
+		this.action = action;
 	}
 
 	/**
-	 * gets the step (the function that is run by taskRunner or run()) that is currently set - getter method for variable step
+	 * gets the action (the thing that is run by taskRunner or manually with {@link Task#run()}) that is currently set - getter method for variable {@link Task#action}
 	 * @return the currently set step
 	 */
-	public Step getStep(){
-		return step;
+	public Runnable getAction() {
+		return action;
 	}
 
 	/**
@@ -147,13 +155,15 @@ public class Task {
 	public void start(){
 		if(isTaskRunnerAttached())
 			taskRunner.addTaskToActiveTasks(containerName, this);
-		running = true;
+		else
+			Logger.getInstance().addMessage(new Message("can not start " + this + " because no task runner is attached. Either attach a task runner or call the run() method to run directly", Message.Type.WARNING, false), true, true,false);
 	}
 
 	public void pause(){
 		if(isTaskRunnerAttached())
 			taskRunner.removeTaskFromActiveTasks(containerName);
-		running = false;
+		else
+			Logger.getInstance().addMessage(new Message("can not start " + this + " because no task runner is attached. Either attach a task runner or call the run() method to run directly", Message.Type.WARNING, false), true, true,false);
 	}
 
 	public void quePause(){
@@ -165,22 +175,11 @@ public class Task {
 	public void restart(){}
 
 	/**
-	 * runs the task without checking if it is running (only use with TaskRunner)
+	 * runs the action
 	 */
-	void runRaw(){
-		try{
-			step.apply();
-		}catch(NullPointerException e){
-			System.out.println("Warning null pointer exception thrown by " + this + ". Make sure to set the step!");
-		}
-	}
-
-	/**
-	 * runs the task if it is running
-	 */
+	@Override
 	public void run(){
-		if(running)
-			runRaw();
+		action.run();
 	}
 	
 	public boolean isRunning(){
@@ -189,10 +188,6 @@ public class Task {
 
 	public boolean isDone(){
 		return !running;
-	}
-
-	public interface Step{
-		void apply();
 	}
 
 	public String getStatusString(String tab, int startTabs){

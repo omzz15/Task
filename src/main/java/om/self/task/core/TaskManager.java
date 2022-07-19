@@ -1,4 +1,4 @@
-package task;
+package om.self.task.core;
 import java.util.Hashtable;
 
 public class TaskManager implements Runnable{
