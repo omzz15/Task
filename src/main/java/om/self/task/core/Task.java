@@ -3,23 +3,19 @@ import java.util.LinkedList;
 
 import om.self.logger.Logger;
 import om.self.logger.Message;
+import om.self.task.structure.KeyedStructure;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A simple task that will exicute a Lambda Function with no input or output.
- * Ways to run are using the run() method or attaching to a TaskRunner.  
+ * Ways to run are using the run() method or attaching to a TaskRunner.
  */
-public class Task implements Runnable{
+public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 	private static LinkedList<Task> allTasks = new LinkedList<>();
 	public static boolean logTasks = false;
 
 	private String name;
-	private Group group;
-	/**
-	 * the name used to identify this task in the group
-	 */
-	private String groupKey;
 	/**
 	 * the Runnable thing that you want contained inside this task
 	 * <p></p>
@@ -30,45 +26,43 @@ public class Task implements Runnable{
 
 	//----------CONSTRUCTORS----------//
 	/**
-	 * Construtor that sets the name of this task, attaches it to taskRunner with the taskRunnerKey paramater, and exicutes command once it is attached
+	 * Constructor that sets the name of this task and attaches it to a parent Group with the key parentKey
 	 * @param name the name of this task
-	 * @param taskRunner the TaskRunner you want to attach this task to 
-	 * @param taskRunnerKey the name used to refrence this task in the TaskRunner
-	 * @param command the command to run once this task has been attached to the TaskRunner
+	 * @param parentKey the name used to reference this task in the parent group (not used if the parent parameter is null)
+	 * @param parent the Group you want to attach this task to (if null then it won't have a parent)
 	 */
-	public Task(String name, Group group, String groupKey, Group.Command command){
-		construct(name, group, groupKey, command);
+	public Task(String name, String parentKey, Group parent){
+		construct(name, parentKey, parent);
 	}
 
 	/**
-	 * Constructor that sets the name of this task and attaches it to taskRunner with the name paramater
+	 * Constructor that sets the name of this task and attaches it to a Group with the key being the same as the name
 	 * @param name the name of this task
-	 * @param taskRunner the TaskRunner you want to attach this task to (taskRunnerKey will equal name)
+	 * @param parent the Group you want to attach this task to (parentKey will equal name)
 	 */
-	public Task(String name, Group group){
-		construct(name, group, name, Group.Command.NONE);
+	public Task(String name, Group parent){
+		construct(name, name, parent);
 	}
 
 	/**
-	 * Constructor that just sets the name of this task. To run wihtout TaskRunner use the run() method
+	 * Constructor that just sets the name of this task.
 	 * @param name the name of this task
 	 */
 	public Task(String name){
-		construct(name, null, null, null);
+		construct(name, null, null);
 	}
 
 	/**
-	 * the method called by constructors to initilize variables and optionally set taskRunner
+	 * the method called by constructors to initialize variables and optionally set parent group
 	 * @param name the name of this task
-	 * @param taskRunner the TaskRunner you want to attach this task to (if null then it wont attach to a taskRunner)
-	 * @param containerName the name used to refrence this task in the TaskRunner (not used if taskRunner is null)
-	 * @param command the command to run once this task has been attached to the TaskRunner (not used if taskRunner is null)
+	 * @param parentKey the name used to reference this task in the parent group (not used if the parent parameter is null)
+	 * @param parent the Group you want to attach this task to (if null then it won't have a parent)
 	 */
-	private void construct(String name, Group group, String groupKey, Group.Command command){
+	private void construct(String name, String parentKey, Group parent){
 		setName(name);
-		//if(taskRunner != null)
-		//	taskRunner.addTask(containerName, this, command);
-		throw new NotImplementedException();
+		if(parent != null)
+			attachParent(parentKey, parent);
+
 		if(logTasks) allTasks.add(this);
 	}
 
@@ -90,22 +84,6 @@ public class Task implements Runnable{
 	}
 
 	/**
-	 * get the current attached group (returns null if no group is attached)
-	 * @return the attached group
-	 */
-	public Group getGroup(){
-		return group;
-	}
-
-	/**
-	 * gets the key(name) used to identify this task in the attached group
-	 * @return the key or null if no group is attached
-	 */
-	public String getGroupKey(){
-		return groupKey;
-	}
-
-	/**
 	 * sets the runnable action (the function that is run by taskRunner or run())
 	 * @param runnable the runnable action you want to run
 	 */
@@ -121,26 +99,20 @@ public class Task implements Runnable{
 		return runnable;
 	}
 
-
 	//----------ATTACH and DETACH----------//
-	public void attachToGroup(String groupKey, Group group){
-		this.group = group;
-		this.groupKey = groupKey;
-		group.addRunnable(groupKey, this);
+	@Override
+	public void onAttached() {
+		getParent().getAllRunnables().put(getParentKey(), this);
 	}
 
-	public void attachToGroup(Group group){
-		attachToGroup(name, group);
+	@Override
+	public void onDetach() {
+		getParent().getAllRunnables().remove(getParentKey());
 	}
-
-	public void detachFromGroup(){
-		throw new NotImplementedException();
-	}
-
 
 	//----------CHECKS----------//
 	public boolean isGroupAttached(){
-		return group != null;
+		return getParent() != null;
 	}
 
 	public boolean isRunning(){
@@ -192,7 +164,7 @@ public class Task implements Runnable{
 		for(int i = 0; i < startTabs; i++){
 			start += tab;
 		}
-		return start + name + " as " + getClass() + ":\n" + 
+		return start + name + " as " + getClass() + ":\n" +
 			start + tab +  "Running: " + running;
 	}
 

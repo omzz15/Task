@@ -1,15 +1,13 @@
 package om.self.task.core;
 
+import om.self.task.structure.KeyedStructure;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.Hashtable;
 import java.util.LinkedList;
-import java.util.Stack;
 
-public class Group implements Runnable{
+public class Group extends KeyedStructure<String, Group> implements Runnable{
     private String name;
-    private Group group;
-    private String groupKey;
 
     private final Hashtable<String, Runnable> allRunnables = new Hashtable<>();
     private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
@@ -23,24 +21,22 @@ public class Group implements Runnable{
 
 
     //----------CONSTRUCTOR----------//
-    public Group(String name, Runnable... runnables){
-        construct(name, null, null, null, runnables);
+    public Group(String name){
+        construct(name, null, null);
     }
 
-    public Group(String name, Group group, Runnable... runnables){
-        construct(name, group, name, Command.NONE, runnables);
+    public Group(String name, Group parent){
+        construct(name, name, parent);
     }
 
-    public Group(String name, Group group, String groupKey, Command command, Runnable... runnables){
-        construct(name, group, groupKey, command, runnables);
+    public Group(String name, String parentKey, Group parent){
+        construct(name, parentKey, parent);
     }
 
-    private void construct(String name, Group group, String groupKey, Command command, Object... args){
+    private void construct(String name, String parentKey, Group group){
         this.name = name;
         if(group != null) {
-            attachToGroup(groupKey, group);
-            if (command != null)
-                runCommand(groupKey, command, args);
+            attachParent(parentKey, group);
         }
     }
 
@@ -52,10 +48,6 @@ public class Group implements Runnable{
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Group getGroup() {
-        return group;
     }
 
     public String getDefaultActionName() {
@@ -103,31 +95,25 @@ public class Group implements Runnable{
     }
 
     //----------ADDING NEW----------//
-    public void addRunnable(String key, Runnable runnable, Command command, Object... args){
-        if(runnable instanceof Group){
-            Group group = (Group) runnable;
-            group.group = this.group;
-            group.groupKey = key;
-        }else if(runnable instanceof  Task){
-            Task task = (Task) runnable;
-            task.se
-        }
-        allRunnables.put(groupKey, runnable);
-    }
-
     public void addRunnable(String key, Runnable runnable){
         allRunnables.put(key, runnable);
     }
 
-    public void attachToGroup(String groupKey, Group group){
-        this.group = group;
-        this.groupKey = groupKey;
-        group.addRunnable(groupKey, this);
+    public void addRunnable(String key, KeyedStructure<String, Group> child) {
+        child.attachParent(key, this);
     }
 
-    public void attachToGroup(Group group){
-        attachToGroup(name, group);
+    //----------ATTACH and DETACH----------//
+    @Override
+    public void onAttached() {
+        getParent().getAllRunnables().put(getParentKey(), this);
     }
+
+    @Override
+    public void onDetach() {
+        getParent().getAllRunnables().remove(getParentKey());
+    }
+
 
     //----------ACTIONS----------//
     public void start(){}
