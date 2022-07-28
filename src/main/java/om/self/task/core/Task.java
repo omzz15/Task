@@ -101,22 +101,19 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 	//----------ATTACH and DETACH----------//
 	@Override
-	public void onAttached() {
+	protected void onAttached() {
 		getParent().getAllRunnables().put(getParentKey(), this);
 	}
 
 	@Override
-	public void onDetach() {
+	protected void onDetach() {
 		getParent().getAllRunnables().remove(getParentKey());
 	}
 
 	//----------CHECKS----------//
-	public boolean isGroupAttached(){
-		return getParent() != null;
-	}
-
 	public boolean isRunning(){
-		throw new NotImplementedException();
+		if(!isParentAttached()) return false;
+		return getParent().isChildRunning(getParentKey());
 	}
 
 	public boolean isDone(){
@@ -126,27 +123,25 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 	//----------ACTIONS----------//
 	public void start(){
-		if(isGroupAttached())
-			throw new NotImplementedException();
+		if(isParentAttached())
+			getParent().runCommand(getParentKey(), Group.Command.START);
 		else
 			Logger.getInstance().addMessage(new Message("can not start " + this + " because no task runner is attached. Either attach a task runner or call the run() method to run directly", Message.Type.WARNING, false), true, true,false);
 	}
 
 	public void pause(){
-		if(isGroupAttached())
-			throw new NotImplementedException();
+		if(isParentAttached())
+			getParent().runCommand(getParentKey(), Group.Command.PAUSE);
 		else
-			Logger.getInstance().addMessage(new Message("can not pause " + this + " because no task runner is attached. Either attach a task runner or call the run() method to run directly", Message.Type.WARNING, false), true, true,false);
+			Logger.getInstance().addMessage(new Message("can not pause " + this + " because no task runner is attached. Attach a task runner to use this method.", Message.Type.WARNING, false), true, true,false);
 	}
 
 	public void quePause(){
-		throw new NotImplementedException();
+		if(isParentAttached())
+			getParent().runCommand(getParentKey(), Group.Command.QUE_PAUSE);
+		else
+			Logger.getInstance().addMessage(new Message("can not quePause " + this + " because no task runner is attached. Attach a task runner to use this method.", Message.Type.WARNING, false), true, true,false);
 	}
-
-	public void reset(){}
-
-	public void restart(){}
-
 
 	//----------RUN----------//
 	/**
@@ -165,7 +160,7 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 			start += tab;
 		}
 		return start + name + " as " + getClass() + ":\n" +
-			start + tab +  "Running: " + running;
+			start + tab +  "Running: " + isRunning();
 	}
 
 	@Override

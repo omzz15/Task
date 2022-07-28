@@ -7,6 +7,10 @@ public abstract class Structure<T> {
         return parent;
     }
 
+    public boolean isParentAttached(){
+        return parent != null;
+    }
+
     public void attachParent(T parent) {
         this.parent = parent;
         onAttached();
@@ -17,7 +21,7 @@ public abstract class Structure<T> {
         parent = null;
     }
 
-    public abstract void onAttached();
+    protected abstract void onAttached();
 
-    public abstract void onDetach();
+    protected abstract void onDetach();
 }
