@@ -1,13 +1,16 @@
 package om.self.task.core;
 
-import om.self.task.structure.KeyedStructure;
-import om.self.task.structure.NamedKeyedStructure;
-import om.self.task.structure.Structure;
+import om.self.structure.KeyedStructure;
+import om.self.structure.NamedKeyedStructure;
+import om.self.structure.Structure;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.Hashtable;
 import java.util.LinkedList;
 
+/**
+ * A structure class that can manage and run {@link Runnable} like {@link Task}.
+ */
 public class Group extends NamedKeyedStructure<String, String, Group> implements Runnable{
     private final Hashtable<String, Runnable> allRunnables = new Hashtable<>();
     private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
@@ -19,19 +22,41 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
     //private String defaultActionName;
     //private boolean runningDefault = false;
 
+    /**
+     * Whether this group should automatically be paused and started based on if there are any active runnables
+     */
+    private boolean autoManage = true;
+
 
     //----------CONSTRUCTOR----------//
+
+    /**
+     * Basic constructor that just sets the name of this group without attaching parent
+     * @param name the name of this group
+     */
     public Group(String name){
         construct(name, null, null);
     }
 
+    /**
+     * Constructor that sets the name of this group then attaches it to a parent with the parent key as name
+     * @param name the name of this group and the key used to identify this to parent
+     * @param parent the parent this group is attached to
+     */
     public Group(String name, Group parent){
         construct(name, name, parent);
     }
 
+    /**
+     * Constructor that sets the name of this group then attaches it to a parent with the parent key as parentKey
+     * @param name the name of this group
+     * @param parentKey the key used to identify this to parent
+     * @param parent the parent this group is attached to
+     */
     public Group(String name, String parentKey, Group parent){
         construct(name, parentKey, parent);
     }
+
 
     private void construct(String name, String parentKey, Group group){
         setName(name);
@@ -50,18 +75,36 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
 //        this.defaultActionName = defaultActionName;
 //    }
 
+    /**
+     * gets all the runnables attached to this group
+     * @return {@link Group#allRunnables}
+     */
     public Hashtable<String, Runnable> getAllRunnables() {
         return allRunnables;
     }
 
+    /**
+     * Gets a specific runnable. If nothing is stored with the key then it returns null.
+     * @param key the key associated with the runnable you want(aka: {@link KeyedStructure#parentKey})
+     * @return the runnable associated with the passed in key
+     */
     public Runnable getRunnable(String key){
         return allRunnables.get(key);
     }
 
+    /**
+     * gets all active(running) runnables
+     * @return {@link Group#activeRunnables}
+     */
     public Hashtable<String, Runnable> getActiveRunnables() {
         return activeRunnables;
     }
 
+    /**
+     * Gets a specific active runnable. If nothing is stored with the key then it returns null.
+     * @param key the key associated with runnable you want(aka: {@link KeyedStructure#parentKey})
+     * @return the active runnable associated with the passed in key
+     */
     public Runnable getActiveRunnable(String key){
         return activeRunnables.get(key);
     }
@@ -74,25 +117,67 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
 //        return currentRunnableFromQue;
 //    }
 
+    /**
+     * gets the queued actions to run whenever {@link Group#run()} is called
+     * @return {@link Group#queuedGroupActions}
+     */
     public LinkedList<Runnable> getQueuedGroupActions() {
         return queuedGroupActions;
     }
 
+    /**
+     * 1
+     * @param runnable 1
+     */
+    public void addToQueuedGroupActions(Runnable runnable){
+        queuedGroupActions.add(runnable);
+    }
+
+    /**
+     * 1
+     * @return 1
+     */
+    public boolean isAutoManageEnabled() {
+        return autoManage;
+    }
+
+    /**
+     * 1
+     * @param autoManage 1
+     */
+    public void setAutoManage(boolean autoManage) {
+        this.autoManage = autoManage;
+    }
 
     //----------CHECKS----------//
 //    public boolean isRunningDefault() {
 //        return runningDefault;
 //    }
 
+    /**
+     * 1
+     * @return 1
+     */
     public boolean isRunning() {
         return isParentAttached() && getParent().getActiveRunnable(getParentKey()) != null;
     }
 
+    /**
+     * 1
+     * @param key 1
+     * @return 1
+     */
     public boolean isChildRunning(String key){
         return getActiveRunnable(key) != null;
     }
 
+
     //----------ADDING and REMOVING----------//
+    /**
+     * 1
+     * @param key 1
+     * @param runnable 1
+     */
     public void addRunnable(String key, Runnable runnable){
         if(runnable instanceof KeyedStructure<?,?>)
             ((KeyedStructure<String, Group>) runnable).attachParent(key, this);
@@ -100,10 +185,18 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
             allRunnables.put(key, runnable);
     }
 
+    /**
+     * 1
+     * @param child 1
+     */
     public void addRunnable(NamedKeyedStructure<String, String, Group> child){
         addRunnable(child.getName(), (Runnable) child);
     }
 
+    /**
+     * 1
+     * @param key 1
+     */
     public void removeRunnable(String key){
         Runnable r = allRunnables.remove(key);
         if(r instanceof Structure<?>)
@@ -133,6 +226,10 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
 
 
     //----------ACTIONS----------//
+
+    /**
+     * 1
+     */
     public void start(){
         if(isParentAttached())
             getParent().runCommand(getParentKey(), Command.START);
@@ -140,6 +237,17 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
             throw new NotImplementedException();
     }
 
+    /**
+     * 1
+     */
+    public void queStart(){
+        if(isParentAttached())
+            getParent().runCommand(getParentKey(), Command.QUE_START);
+    }
+
+    /**
+     * 1
+     */
     public void pause(){
         if (isParentAttached())
             getParent().runCommand(getParentKey(), Command.PAUSE);
@@ -147,25 +255,43 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
             throw new NotImplementedException();
     }
 
+    /**
+     * 1
+     */
     public void quePause(){
         if(isParentAttached())
             getParent().runCommand(getParentKey(), Command.QUE_PAUSE);
     }
 
+    /**
+     * 1
+     * @param key 1
+     * @param command 1
+     * @param args 1
+     * @return 1
+     */
     public boolean runCommand(String key, Command command, Object... args){
         switch (command){
             case START: {
                 Runnable runnable = getRunnable(key);
                 if(runnable == null) return false;
                 activeRunnables.put(key, runnable);
+                if(isAutoManageEnabled() && isParentAttached() && !isRunning())
+                    queStart();
                 break;
             }
             case PAUSE: {
                 activeRunnables.remove(key);
+                if(isAutoManageEnabled() && isParentAttached() && activeRunnables.isEmpty())
+                    quePause();
                 break;
             }
             case QUE_PAUSE: {
-                queuedGroupActions.add(() -> runCommand(key, Command.PAUSE));
+                addToQueuedGroupActions(() -> runCommand(key, Command.PAUSE));
+                break;
+            }
+            case QUE_START:{
+                addToQueuedGroupActions(() -> runCommand(key, Command.START));
                 break;
             }
 //            case ADD_TO_QUE: {
@@ -211,16 +337,18 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
     //----------RUN----------//
     @Override
     public void run(){
-        queuedGroupActions.forEach((runnable -> runnable.run()));
+        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
 
         activeRunnables.forEach((k,v) -> v.run());
     }
+
 
     public enum Command{
         NONE,
         START,
         PAUSE,
         QUE_PAUSE,
+        QUE_START,
         //ADD_TO_QUE,
         //ADD_TO_SPOT_IN_QUE,
         //REMOVE_FROM_QUE,

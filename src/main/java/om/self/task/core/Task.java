@@ -1,18 +1,19 @@
 package om.self.task.core;
 import java.util.LinkedList;
 
-import om.self.logger.Logger;
-import om.self.logger.Message;
-import om.self.task.structure.KeyedStructure;
+import om.self.structure.KeyedStructure;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * A simple task that will exicute a Lambda Function with no input or output.
+ * A simple task that will execute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.
  */
 public class Task extends KeyedStructure<String, Group> implements Runnable{
 
-	private static LinkedList<Task> allTasks = new LinkedList<>();
+	private static final LinkedList<Task> allTasks = new LinkedList<>();
+	/**
+	 * 1
+	 */
 	public static boolean logTasks = false;
 
 	private String name;
@@ -78,6 +79,7 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 	/**
 	 * gets the name of this task
+	 * @return {@link Task#name}
 	 */
 	public String getName() {
 		return name;
@@ -111,36 +113,63 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 	}
 
 	//----------CHECKS----------//
+
+	/**
+	 * 1
+	 * @return 1
+	 */
 	public boolean isRunning(){
-		if(!isParentAttached()) return false;
-		return getParent().isChildRunning(getParentKey());
+		return isParentAttached() && getParent().isChildRunning(getParentKey());
 	}
 
+	/**
+	 * 1
+	 * @return 1
+	 */
 	public boolean isDone(){
 		return !isRunning();
 	}
 
 
 	//----------ACTIONS----------//
+	/**
+	 * 1
+	 */
 	public void start(){
 		if(isParentAttached())
 			getParent().runCommand(getParentKey(), Group.Command.START);
 		else
-			Logger.getInstance().addMessage(new Message("can not start " + this + " because no task runner is attached. Either attach a task runner or call the run() method to run directly", Message.Type.WARNING, false), true, true,false);
+			throw new NotImplementedException();
 	}
 
+	/**
+	 * 1
+	 */
 	public void pause(){
 		if(isParentAttached())
 			getParent().runCommand(getParentKey(), Group.Command.PAUSE);
 		else
-			Logger.getInstance().addMessage(new Message("can not pause " + this + " because no task runner is attached. Attach a task runner to use this method.", Message.Type.WARNING, false), true, true,false);
+			throw new NotImplementedException();
 	}
 
+	/**
+	 * 1
+	 */
 	public void quePause(){
 		if(isParentAttached())
 			getParent().runCommand(getParentKey(), Group.Command.QUE_PAUSE);
 		else
-			Logger.getInstance().addMessage(new Message("can not quePause " + this + " because no task runner is attached. Attach a task runner to use this method.", Message.Type.WARNING, false), true, true,false);
+			throw new NotImplementedException();
+	}
+
+	/**
+	 * 1
+	 */
+	public void queStart(){
+		if(isParentAttached())
+			getParent().runCommand(getParentKey(), Group.Command.QUE_START);
+		else
+			throw new NotImplementedException();
 	}
 
 	//----------RUN----------//
@@ -154,11 +183,16 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 
 	//----------INFO----------//
+
+	/**
+	 * 1
+	 * @param tab 1
+	 * @param startTabs 1
+	 * @return 1
+	 */
 	public String getStatusString(String tab, int startTabs){
-		String start = "";
-		for(int i = 0; i < startTabs; i++){
-			start += tab;
-		}
+		StringBuilder start = new StringBuilder();
+		start.append(tab.repeat(startTabs));
 		return start + name + " as " + getClass() + ":\n" +
 			start + tab +  "Running: " + isRunning();
 	}
@@ -170,10 +204,20 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 
 	//----------STATIC METHODS----------//
+
+	/**
+	 * 1
+	 * @return 1
+	 */
 	public static LinkedList<Task> getAllTasks(){
 		return allTasks;
 	}
 
+	/**
+	 * 1
+	 * @param name 1
+	 * @return 1
+	 */
 	public static Task getTaskWithName(String name){
 		for(Task t : allTasks)
 			if(t.getName().equals(name))

@@ -1,4 +1,6 @@
-package task;
+package om.self.task.other;
+
+import om.self.task.core.Group;
 
 public class TimedTask extends TaskEx {
     private long startTime;
@@ -7,11 +9,15 @@ public class TimedTask extends TaskEx {
         super(name);
     }
 
-    public TimedTask(String name, TaskRunner taskRunner){
-		super(name, taskRunner);
+    public TimedTask(String name, Group parent){
+		super(name, parent);
 	}
 
-    public void addTimedStep(Step step, int time){
+    public TimedTask(String name, String parentKey, Group parent){
+        super(name, parentKey, parent);
+    }
+
+    public void addTimedStep(Runnable step, int time){
         //sanitize input
         if(time <= 0 || step == null) return;
 
