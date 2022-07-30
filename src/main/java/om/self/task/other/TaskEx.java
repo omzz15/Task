@@ -91,6 +91,14 @@ public class TaskEx extends Task {
 
     /**
      * 1
+     * @param task 1
+     */
+    public void addStep(Task task){
+        addStep(task, task::isDone);
+    }
+
+    /**
+     * 1
      * @param step 1
      * @param end 1
      * @param index 1

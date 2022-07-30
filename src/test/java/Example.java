@@ -1,4 +1,5 @@
 import om.self.task.core.Group;
+import om.self.task.core.Task;
 import om.self.task.other.TaskEx;
 
 public class Example {
@@ -14,6 +15,7 @@ public class Example {
 
         TaskEx t1 = new TaskEx("test", g1);
         t1.addStep(()-> System.out.println("task 1 ran"));
+        t1.addStep(new Task(""));
         //t1.start();
 
         g2.addRunnable("task 2", () -> {
