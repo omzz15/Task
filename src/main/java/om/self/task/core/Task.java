@@ -1,26 +1,22 @@
 package om.self.task.core;
+
 import java.util.LinkedList;
 
-import om.self.structure.KeyedStructure;
-import org.apache.commons.lang3.NotImplementedException;
+import om.self.structure.NamedKeyedStructure;
+import om.self.task.command.Commandable;
 
 /**
  * A simple task that will execute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.
  */
-public class Task extends KeyedStructure<String, Group> implements Runnable{
-
+public class Task extends NamedKeyedStructure<String, String, Group> implements Runnable, Commandable<Group.Command, Object> {
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
 	/**
 	 * 1
 	 */
 	public static boolean logTasks = false;
-
-	private String name;
 	/**
 	 * the Runnable thing that you want contained inside this task
-	 * <p></p>
-	 * NOTE: this may be run inside a different thread if you are using multithreaded components
 	 */
 	private Runnable runnable;
 
@@ -70,22 +66,6 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 	//----------GETTER AND SETTER----------//
 	/**
-	 * sets the name of this task
-	 * @param name the name you want to set this task to
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	/**
-	 * gets the name of this task
-	 * @return {@link Task#name}
-	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
 	 * sets the runnable action (the function that is run by taskRunner or run())
 	 * @param runnable the runnable action you want to run
 	 */
@@ -101,19 +81,8 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 		return runnable;
 	}
 
-	//----------ATTACH and DETACH----------//
-	@Override
-	protected void onAttached() {
-		getParent().getAllRunnables().put(getParentKey(), this);
-	}
-
-	@Override
-	protected void onDetach() {
-		getParent().getAllRunnables().remove(getParentKey());
-	}
 
 	//----------CHECKS----------//
-
 	/**
 	 * 1
 	 * @return 1
@@ -131,48 +100,19 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 	}
 
 
-	//----------ACTIONS----------//
-	/**
-	 * 1
-	 */
-	public void start(){
-		if(isParentAttached())
-			getParent().runCommand(getParentKey(), Group.Command.START);
-		else
-			throw new NotImplementedException();
+	//----------IMPLEMENT NamedKeyedStructure----------//
+	@Override
+	protected void onAttached() {
+		getParent().getAllRunnables().put(getParentKey(), this);
 	}
 
-	/**
-	 * 1
-	 */
-	public void pause(){
-		if(isParentAttached())
-			getParent().runCommand(getParentKey(), Group.Command.PAUSE);
-		else
-			throw new NotImplementedException();
+	@Override
+	protected void onDetach() {
+		getParent().getAllRunnables().remove(getParentKey());
 	}
 
-	/**
-	 * 1
-	 */
-	public void quePause(){
-		if(isParentAttached())
-			getParent().runCommand(getParentKey(), Group.Command.QUE_PAUSE);
-		else
-			throw new NotImplementedException();
-	}
 
-	/**
-	 * 1
-	 */
-	public void queStart(){
-		if(isParentAttached())
-			getParent().runCommand(getParentKey(), Group.Command.QUE_START);
-		else
-			throw new NotImplementedException();
-	}
-
-	//----------RUN----------//
+	//----------IMPLEMENT Runnable----------//
 	/**
 	 * runs the action
 	 */
@@ -182,8 +122,15 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 	}
 
 
-	//----------INFO----------//
+	//----------IMPLEMENT Commandable----------//
+	@Override
+	public boolean runCommand(Group.Command command, Object... args) {
+		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
+		return false;
+	}
 
+
+	//----------INFO----------//
 	/**
 	 * 1
 	 * @param tab 1
@@ -193,7 +140,7 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 	public String getStatusString(String tab, int startTabs){
 		StringBuilder start = new StringBuilder();
 		start.append(tab.repeat(startTabs));
-		return start + name + " as " + getClass() + ":\n" +
+		return start + getName() + " as " + getClass() + ":\n" +
 			start + tab +  "Running: " + isRunning();
 	}
 
@@ -204,7 +151,6 @@ public class Task extends KeyedStructure<String, Group> implements Runnable{
 
 
 	//----------STATIC METHODS----------//
-
 	/**
 	 * 1
 	 * @return 1

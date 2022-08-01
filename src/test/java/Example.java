@@ -20,7 +20,7 @@ public class Example {
             System.out.println("task 2 ran");
             t1.restart();
         });
-        g2.runCommand("task 2", Group.Command.START);
+        g2.runKeyedCommand("task 2", Group.Command.START);
 
         p1.run();
         p1.run();

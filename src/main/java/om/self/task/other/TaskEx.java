@@ -49,7 +49,7 @@ public class TaskEx extends Task {
     }
 
 
-    //----------AUTO START----------//
+    //----------GETTERS and SETTERS----------//
     public void setAutoStart(boolean autoStart) {
         this.autoStart = autoStart;
     }
@@ -92,6 +92,14 @@ public class TaskEx extends Task {
     /**
      * 1
      * @param step 1
+     */
+    public void addStep(Task step){
+        addStep(step, step::isDone);
+    }
+
+    /**
+     * 1
+     * @param step 1
      * @param end 1
      * @param index 1
      */
@@ -105,7 +113,7 @@ public class TaskEx extends Task {
 
     private void autoStart(){
         if(isAutoStartEnabled() && isParentAttached() && !isRunning())
-            start();
+            runCommand(Group.Command.START);
     }
 
     /**
@@ -145,18 +153,7 @@ public class TaskEx extends Task {
      */
     public void restart(){
         reset();
-        start();
     }
-
-    /**
-     * 1
-     */
-    @Override
-    public void start(){
-        setCurrStep(getCurrentStep());
-        super.start();
-    }
-
 
     //----------RUN----------//
     /**
@@ -216,7 +213,7 @@ public class TaskEx extends Task {
     public void setCurrStep(int curr){
         if (checkIfDone(curr)) {
             done = true;
-            if(isParentAttached()) quePause();
+            if(isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
             return;
         }
         super.setRunnable(steps.get(curr));
