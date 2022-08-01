@@ -13,12 +13,14 @@ public class Example {
         //g2.start();
 
         TaskEx t1 = new TaskEx("test", g1);
-        t1.addStep(()-> System.out.println("task 1 ran"));
+        t1.addStep(()-> System.out.println("task 1 ran 1"));
+        t1.addStep(()-> System.out.println("task 1 ran 2"));
+        t1.setAutoPause(false);
+        t1.setAutoReset(false);
         //t1.start();
 
         g2.addRunnable("task 2", () -> {
             System.out.println("task 2 ran");
-            t1.restart();
         });
         g2.runKeyedCommand("task 2", Group.Command.START);
 

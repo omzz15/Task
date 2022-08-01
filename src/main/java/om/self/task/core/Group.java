@@ -3,8 +3,6 @@ package om.self.task.core;
 import om.self.structure.KeyedStructure;
 import om.self.structure.NamedKeyedStructure;
 import om.self.structure.Structure;
-import om.self.task.command.Commandable;
-import om.self.task.command.KeyedCommandable;
 
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -12,7 +10,7 @@ import java.util.LinkedList;
 /**
  * A structure class that can manage and run {@link Runnable} like {@link Task}.
  */
-public class Group extends NamedKeyedStructure<String, String, Group> implements Runnable, KeyedCommandable<String, Group.Command, Object>, Commandable<Group.Command, Object> {
+public class Group extends NamedKeyedStructure<String, String, Group> implements Runnable {
     private final Hashtable<String, Runnable> allRunnables = new Hashtable<>();
     private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
     private final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
@@ -213,7 +211,7 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
     }
 
 
-    //----------IMPLEMENT Commandable and KeyedCommandable----------//
+    //----------Commands----------//
     /**
      * 1
      * @param key 1
@@ -221,7 +219,6 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
      * @param args 1
      * @return 1
      */
-    @Override
     public boolean runKeyedCommand(String key, Command command, Object... args){
         switch (command){
             case START: {
@@ -254,11 +251,11 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
         return true;
     }
 
-    @Override
     public boolean runCommand(Command command, Object... args) {
         if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
         return false;
     }
+
 
     //----------IMPLEMENT Runnable----------//
     @Override

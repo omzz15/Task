@@ -3,13 +3,12 @@ package om.self.task.core;
 import java.util.LinkedList;
 
 import om.self.structure.NamedKeyedStructure;
-import om.self.task.command.Commandable;
 
 /**
  * A simple task that will execute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.
  */
-public class Task extends NamedKeyedStructure<String, String, Group> implements Runnable, Commandable<Group.Command, Object> {
+public class Task extends NamedKeyedStructure<String, String, Group> implements Runnable{
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
 	/**
 	 * 1
@@ -122,8 +121,7 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	}
 
 
-	//----------IMPLEMENT Commandable----------//
-	@Override
+	//----------Command----------//
 	public boolean runCommand(Group.Command command, Object... args) {
 		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
 		return false;
