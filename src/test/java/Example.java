@@ -1,33 +1,32 @@
 import om.self.task.core.Group;
-import om.self.task.other.TaskEx;
+import om.self.task.core.Task;
+import om.self.task.core.TaskEx;
+import om.self.task.other.DelayTask;
+import om.self.task.other.IncrementedTask;
+import om.self.task.other.Que;
 
 public class Example {
     public static void main(String[] args){
-        Group p1 = new Group("parent 1");
+        //Group main = new Group("main");
 
-        Group g1 = new Group("child 1", p1);
-        //g1.setAutoManage(false);
-        //g1.start();
+        TaskEx t = new Que("test");
 
-        Group g2 = new Group("child 2", p1);
-        //g2.start();
+        DelayTask delay = new DelayTask("");
+        //delay.setAutoReset(false);
+        delay.addDelay(100);
 
-        TaskEx t1 = new TaskEx("test", g1);
-        t1.addStep(()-> System.out.println("task 1 ran 1"));
-        t1.addStep(()-> System.out.println("task 1 ran 2"));
-        t1.setAutoPause(false);
-        t1.setAutoReset(false);
-        //t1.start();
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 15; j++) {
+                int finalI = i;
+                int finalJ = j;
+                t.addStep(() -> System.out.print("\rStep " + finalI + " is running" + ".".repeat(finalJ)));
+                t.addStep(delay);
+                //t.addStep(() -> delay.reset());
+            }
+        }
 
-        g2.addRunnable("task 2", () -> {
-            System.out.println("task 2 ran");
-        });
-        g2.runKeyedCommand("task 2", Group.Command.START);
-
-        p1.run();
-        p1.run();
-        p1.run();
-        p1.run();
-        p1.run();
+        while (!t.isDone()) {
+            t.run();
+        }
     }
 }

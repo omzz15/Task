@@ -1,8 +1,9 @@
 package om.self.task.other;
 
 import om.self.task.core.Group;
+import om.self.task.core.TaskEx;
 
-public class DelayTask extends TaskEx{
+public class DelayTask extends TaskEx {
     private long delayStart;
 
     public DelayTask(String name){
@@ -18,7 +19,6 @@ public class DelayTask extends TaskEx{
     }
 
     public void addDelay(int delay){
-		if(delay <= 0) return;
 		addStep(() -> {delayStart = System.currentTimeMillis();});
 		addStep(() -> (System.currentTimeMillis() - delayStart >= delay));
 	}

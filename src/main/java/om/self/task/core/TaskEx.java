@@ -1,7 +1,4 @@
-package om.self.task.other;
-
-import om.self.task.core.Group;
-import om.self.task.core.Task;
+package om.self.task.core;
 
 import java.util.LinkedList;
 import java.util.function.Supplier;
@@ -17,9 +14,8 @@ public class TaskEx extends Task {
     private int currentStep = 0;
     private boolean done = false;
 
-    private boolean autoStart = true;
-    private boolean autoPause = true;
     private boolean autoReset = true;
+    private boolean queuedReset = false;
 
 
     //----------CONSTRUCTORS----------//
@@ -53,6 +49,11 @@ public class TaskEx extends Task {
         super(name, parentKey, parent);
     }
 
+    @Override
+    protected void construct(String name, String parentKey, Group parent) {
+        setAutoPause(true);
+        super.construct(name, parentKey, parent);
+    }
 
     //----------GETTERS and SETTERS----------//
     /**
@@ -74,7 +75,7 @@ public class TaskEx extends Task {
         if (curr >= steps.size()) {
             done = true;
             if(isAutoPauseEnabled() && isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
-            if(isAutoResetEnabled() && curr != 0) reset();
+            if(isAutoResetEnabled() && curr != 0) queReset();
             return;
         }
         super.setRunnable(steps.get(curr));
@@ -90,28 +91,6 @@ public class TaskEx extends Task {
     @Override
     public boolean isDone() {
         return done;
-    }
-
-    /**
-     * @param autoStart
-     */
-    public void setAutoStart(boolean autoStart) {
-        this.autoStart = autoStart;
-    }
-
-    /**
-     * @return
-     */
-    public boolean isAutoStartEnabled() {
-        return autoStart;
-    }
-
-    public boolean isAutoPauseEnabled() {
-        return autoPause;
-    }
-
-    public void setAutoPause(boolean autoPause) {
-        this.autoPause = autoPause;
     }
 
     /**
@@ -199,8 +178,8 @@ public class TaskEx extends Task {
      */
     private void onEmptyAddStep() {
         setCurrentStep(0);
-        if (isAutoStartEnabled() && isParentAttached() && !isRunning())
-            runCommand(Group.Command.START);
+        //if (isAutoStartEnabled() && isParentAttached() && !isRunning())
+        //    runCommand(Group.Command.START);
     }
 
     /**
@@ -251,6 +230,10 @@ public class TaskEx extends Task {
         setCurrentStep(0);
     }
 
+    public void queReset(){
+        queuedReset = true;
+    }
+
     /**
      * 1
      */
@@ -266,6 +249,11 @@ public class TaskEx extends Task {
      */
     @Override
     public void run() {
+        if(queuedReset){
+            reset();
+            queuedReset = false;
+        }
+
         getRunnable().run();
         if (end.get())
             setToNextStep();

@@ -1,10 +1,11 @@
 package om.self.task.other;
 
 import om.self.task.core.Group;
+import om.self.task.core.TaskEx;
 
 import java.util.function.Supplier;
 
-public class IncrementedTask extends TaskEx{
+public class IncrementedTask extends TaskEx {
     private int i;
 
     public IncrementedTask(String name) {

@@ -1,6 +1,7 @@
 package om.self.task.other;
 
 import om.self.task.core.Group;
+import om.self.task.core.TaskEx;
 
 public class TimedTask extends TaskEx {
     private long startTime;

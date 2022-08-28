@@ -19,6 +19,8 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	 */
 	private Runnable runnable;
 
+	private boolean autoStart = true;
+	private boolean autoPause = false;
 
 	//----------CONSTRUCTORS----------//
 	/**
@@ -54,7 +56,7 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	 * @param parentKey the name used to reference this task in the parent group (not used if the parent parameter is null)
 	 * @param parent the Group you want to attach this task to (if null then it won't have a parent)
 	 */
-	private void construct(String name, String parentKey, Group parent){
+	protected void construct(String name, String parentKey, Group parent){
 		setName(name);
 		if(parent != null)
 			attachParent(parentKey, parent);
@@ -69,7 +71,11 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	 * @param runnable the runnable action you want to run
 	 */
 	public void setRunnable(Runnable runnable){
+		if(runnable == null) return;
+
 		this.runnable = runnable;
+		if(isParentAttached() && !isRunning() && autoStart)
+			runCommand(Group.Command.START);
 	}
 
 	/**
@@ -78,6 +84,28 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	 */
 	public Runnable getRunnable() {
 		return runnable;
+	}
+
+	/**
+	 * @param autoStart
+	 */
+	public void setAutoStart(boolean autoStart) {
+		this.autoStart = autoStart;
+	}
+
+	/**
+	 * @return
+	 */
+	public boolean isAutoStartEnabled() {
+		return autoStart;
+	}
+
+	public boolean isAutoPauseEnabled() {
+		return autoPause;
+	}
+
+	public void setAutoPause(boolean autoPause) {
+		this.autoPause = autoPause;
 	}
 
 
@@ -118,6 +146,8 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	@Override
 	public void run(){
 		runnable.run();
+		if(isRunning() && autoPause)
+			runCommand(Group.Command.QUE_PAUSE);
 	}
 
 
