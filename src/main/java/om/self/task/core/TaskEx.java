@@ -269,6 +269,8 @@ public class TaskEx extends Task {
         throw new UnsupportedOperationException("you can't directly set the runnable with a taskEx!");
     }
 
+
+
     /**
      * 1
      *
@@ -277,14 +279,26 @@ public class TaskEx extends Task {
      * @return 1
      */
     @Override
-    public String getStatusString(String tab, int startTabs) {
-        String start = "";
-        for (int i = 0; i < startTabs; i++) {
-            start += tab;
-        }
+    public String getInfo(String tab, int startTabs, boolean extend) {
+        String start = tab.repeat(startTabs);
+        StringBuilder str = getBaseInfo(tab, start);
 
-        return super.getStatusString(tab, startTabs) + "\n" +
-                start + tab + "Current Step: " + getCurrentStep() + "\n" +
-                start + tab + "Done: " + isDone();
+        str.append("\n");
+        str.append(start + tab + "Completed: " + done);
+
+        str.append("\n");
+        str.append(start + tab + "Current Step: " + (currentStep + 1));
+
+        if(extend) {
+            str.append("\n");
+            str.append(start + tab + "Total Steps: " + steps.size());
+            str.append("\n");
+            str.append(start + tab + "Auto Start: " + isAutoStartEnabled());
+            str.append("\n");
+            str.append(start + tab + "Auto Pause: " + isAutoPauseEnabled());
+            str.append("\n");
+            str.append(start + tab + "Auto Reset: " + isAutoPauseEnabled());
+        }
+        return str.toString();
     }
 }

@@ -6,6 +6,7 @@ import om.self.structure.Structure;
 
 import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * A structure class that can manage and run {@link Runnable} like {@link Task}.
@@ -266,6 +267,69 @@ public class Group extends NamedKeyedStructure<String, String, Group> implements
     }
 
 
+    //----------INFO----------//
+    protected StringBuilder getBaseInfo(String tab, String start){
+        StringBuilder str = new StringBuilder(start);
+        str.append(getName() + " Info:");
+        str.append("\n");
+        str.append(start + tab + "Type: " + getClass().getSimpleName());
+        str.append("\n");
+        str.append(start + tab + "Status: ");
+        if(!isParentAttached())
+            str.append("No Parent");
+        else if (isRunning())
+            str.append("Running");
+        else
+            str.append("Not Running");
+
+        return str;
+    }
+
+    private String getHashtableInfo(Hashtable<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+        StringBuilder str = new StringBuilder();
+        String start = tab.repeat(startTabs);
+
+        for (Map.Entry<String, Runnable> entry: table.entrySet()) {
+            str.append("\n");
+            str.append(start + tab + "Key: " + entry.getKey());
+            str.append("\n");
+
+            Runnable r = entry.getValue();
+            if(r instanceof Task)
+                str.append(((Task) r).getInfo(tab, startTabs + 2, extend));
+            else if(r instanceof Group)
+                str.append(((Group) r).getInfo(tab, startTabs + 2, extend, getRunningInfo, true));
+            else
+                str.append(start + tab.repeat(2) + r.toString());
+        }
+
+        return str.toString();
+    }
+
+    public String getInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+        String start = tab.repeat(startTabs);
+        StringBuilder str = getBaseInfo(tab, start);
+
+
+        str.append("\n");
+        str.append(start + tab + "All: " + allRunnables.size());
+        if(getAllInfo)
+            str.append(getHashtableInfo(allRunnables, tab, startTabs + 1, extend, getRunningInfo, true));
+
+        str.append("\n");
+        str.append(start + tab + "Active: " + activeRunnables.size());
+        if(getRunningInfo)
+            str.append(getHashtableInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
+
+        return str.toString();
+    }
+
+    @Override
+    public String toString() {
+        return getInfo("|\t", 0, false, true, true);
+    }
+
+    //----------Other----------//
     public enum Command{
         NONE,
         START,

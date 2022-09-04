@@ -159,22 +159,43 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 
 
 	//----------INFO----------//
+	protected StringBuilder getBaseInfo(String tab, String start){
+		StringBuilder str = new StringBuilder(start);
+		str.append(getName() + " Info:");
+		str.append("\n");
+		str.append(start + tab + "Type: " + getClass().getSimpleName());
+		str.append("\n");
+		str.append(start + tab + "Status: ");
+		if(!isParentAttached())
+			str.append("No Parent");
+		else if (isRunning())
+			str.append("Running");
+		else
+			str.append("Not Running");
+		return str;
+	}
+
 	/**
 	 * 1
 	 * @param tab 1
 	 * @param startTabs 1
 	 * @return 1
 	 */
-	public String getStatusString(String tab, int startTabs){
-		StringBuilder start = new StringBuilder();
-		start.append(tab.repeat(startTabs));
-		return start + getName() + " as " + getClass() + ":\n" +
-			start + tab +  "Running: " + isRunning();
+	public String getInfo(String tab, int startTabs, boolean extend){
+		String start = tab.repeat(startTabs);
+		StringBuilder str = getBaseInfo(tab, start);
+		if(extend){
+			str.append("\n");
+			str.append(start + tab +  "Auto Start: " + autoStart);
+			str.append("\n");
+			str.append(start + tab +  "Auto Pause: " + autoPause);
+		}
+		return str.toString();
 	}
 
 	@Override
 	public String toString(){
-		return getStatusString("\t", 0);
+		return getInfo("\t", 0, false);
 	}
 
 
