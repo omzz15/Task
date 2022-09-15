@@ -14,6 +14,9 @@ public class TaskEx extends Task {
     private int currentStep = 0;
     private boolean done = false;
 
+    /**
+     * 1
+     */
     public boolean autoReset = true;
 
 

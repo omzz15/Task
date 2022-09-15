@@ -11,6 +11,9 @@ import java.util.LinkedList;
  */
 public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
+	/**
+	 * 1
+	 */
 	public static boolean logTasks = false;
 
 	private String name;
@@ -130,6 +133,10 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 		parent.attachChild(key, this);
 	}
 
+	/**
+	 * 1
+	 * @param parent 1
+	 */
 	public void attachParent(Group parent){
 		attachParent(name, parent);
 	}
@@ -156,6 +163,13 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 
 
 	//----------Command----------//
+
+	/**
+	 * 1
+	 * @param command 1
+	 * @param args 1
+	 * @return 1
+	 */
 	public boolean runCommand(Group.Command command, Object... args) {
 		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
 		return false;
@@ -163,6 +177,13 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 
 
 	//----------INFO----------//
+
+	/**
+	 * 1
+	 * @param tab 1
+	 * @param start 1
+	 * @return 1
+	 */
 	protected StringBuilder getBaseInfo(String tab, String start){
 		StringBuilder str = new StringBuilder(start);
 		str.append(getName() + " Info:");
@@ -183,6 +204,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * 1
 	 * @param tab 1
 	 * @param startTabs 1
+	 * @param extend 1
 	 * @return 1
 	 */
 	public String getInfo(String tab, int startTabs, boolean extend){

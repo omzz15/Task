@@ -24,6 +24,9 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      */
     private int maxActiveRunnables = -1;
 
+    /**
+     * 1
+     */
     public boolean forceActiveRunnablesDefault = false;
 
 
@@ -108,12 +111,16 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         queuedGroupActions.add(runnable);
     }
 
+    /**
+     * 1
+     * @return 1
+     */
     public int getMaxActiveRunnables() {
         return maxActiveRunnables;
     }
 
     /**
-     * sets the maximum number of runnables that can run at once(anything < 1 is infinity)
+     * sets the maximum number of runnables that can run at once(anything less than 1 is infinity)
      * @param maxActiveRunnables the maximum active runnables
      */
     public void setMaxActiveRunnables(int maxActiveRunnables) {
@@ -155,10 +162,18 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         activeRunnables.remove(key);
     }
 
+    /**
+     * 1
+     * @param group 1
+     */
     public void attachParent(Group group) {
         attachParent(name, group);
     }
 
+    /**
+     *
+     * @param child
+     */
     public void attachChild(NamedStructure<String> child){
         attachChild(child.getName(), (Runnable) child);
     }
@@ -222,6 +237,12 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return true;
     }
 
+    /**
+     * 1
+     * @param command 1
+     * @param args 1
+     * @return 1
+     */
     public boolean runCommand(Command command, Object... args) {
         if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
         return false;
@@ -238,6 +259,13 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
 
     //----------INFO----------//
+
+    /**
+     * 1
+     * @param tab 1
+     * @param start 1
+     * @return 1
+     */
     protected StringBuilder getBaseInfo(String tab, String start){
         StringBuilder str = new StringBuilder(start);
         str.append(getName() + " Info:");
@@ -276,6 +304,15 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return str.toString();
     }
 
+    /**
+     * 1
+     * @param tab 1
+     * @param startTabs 1
+     * @param extend 1
+     * @param getRunningInfo 1
+     * @param getAllInfo 1
+     * @return 1
+     */
     public String getInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
         String start = tab.repeat(startTabs);
         StringBuilder str = getBaseInfo(tab, start);
@@ -300,6 +337,10 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     }
 
     //----------Other----------//
+
+    /**
+     * 1
+     */
     public enum Command{
         NONE,
         START,
