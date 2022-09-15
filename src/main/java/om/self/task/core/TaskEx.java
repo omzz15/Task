@@ -14,8 +14,7 @@ public class TaskEx extends Task {
     private int currentStep = 0;
     private boolean done = false;
 
-    private boolean autoReset = true;
-    private boolean queuedReset = false;
+    public boolean autoReset = true;
 
 
     //----------CONSTRUCTORS----------//
@@ -51,7 +50,7 @@ public class TaskEx extends Task {
 
     @Override
     protected void construct(String name, String parentKey, Group parent) {
-        setAutoPause(true);
+        autoPause = true;
         super.construct(name, parentKey, parent);
     }
 
@@ -74,8 +73,8 @@ public class TaskEx extends Task {
         //auto pause/reset
         if (curr >= steps.size()) {
             done = true;
-            if(isAutoPauseEnabled() && isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
-            if(isAutoResetEnabled() && curr != 0) queReset();
+            if(autoPause && isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
+            if(autoReset && curr != 0) reset();
             return;
         }
         super.setRunnable(steps.get(curr));
@@ -91,22 +90,6 @@ public class TaskEx extends Task {
     @Override
     public boolean isDone() {
         return done;
-    }
-
-    /**
-     *
-     * @param autoReset
-     */
-    public void setAutoReset(boolean autoReset) {
-        this.autoReset = autoReset;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public boolean isAutoResetEnabled() {
-        return autoReset;
     }
 
     //----------ADD/REMOVE STEP----------//
@@ -174,12 +157,10 @@ public class TaskEx extends Task {
     }
 
     /**
-     * This will be called when {@link TaskEx#steps} is empty, and it is responsible for ensuring that {@link Task#runnable} and {@link TaskEx#end} are initially set, so they don't throw errors when {@link TaskEx#run()} is called. It is also responsible for running auto start
+     * This will be called when {@link TaskEx#steps} is empty, and it is responsible for ensuring that {@link Task#runnable} and {@link TaskEx#end} are initially set, so they don't throw errors when {@link TaskEx#run()} is called.
      */
     private void onEmptyAddStep() {
         setCurrentStep(0);
-        //if (isAutoStartEnabled() && isParentAttached() && !isRunning())
-        //    runCommand(Group.Command.START);
     }
 
     /**
@@ -230,10 +211,6 @@ public class TaskEx extends Task {
         setCurrentStep(0);
     }
 
-    public void queReset(){
-        queuedReset = true;
-    }
-
     /**
      * 1
      */
@@ -249,11 +226,6 @@ public class TaskEx extends Task {
      */
     @Override
     public void run() {
-        if(queuedReset){
-            reset();
-            queuedReset = false;
-        }
-
         getRunnable().run();
         if (end.get())
             setToNextStep();
@@ -293,11 +265,11 @@ public class TaskEx extends Task {
             str.append("\n");
             str.append(start + tab + "Total Steps: " + steps.size());
             str.append("\n");
-            str.append(start + tab + "Auto Start: " + isAutoStartEnabled());
+            str.append(start + tab + "Auto Start: " + autoStart);
             str.append("\n");
-            str.append(start + tab + "Auto Pause: " + isAutoPauseEnabled());
+            str.append(start + tab + "Auto Pause: " + autoPause);
             str.append("\n");
-            str.append(start + tab + "Auto Reset: " + isAutoPauseEnabled());
+            str.append(start + tab + "Auto Reset: " + autoReset);
         }
         return str.toString();
     }

@@ -1,26 +1,33 @@
 package om.self.task.core;
 
-import java.util.LinkedList;
+import om.self.structure.NamedStructure;
+import om.self.structure.parent.KeyedParentStructureImpl;
 
-import om.self.structure.NamedKeyedStructure;
+import java.util.LinkedList;
 
 /**
  * A simple task that will execute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.
  */
-public class Task extends NamedKeyedStructure<String, String, Group> implements Runnable{
+public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
-	/**
-	 * 1
-	 */
 	public static boolean logTasks = false;
+
+	private String name;
+
 	/**
 	 * the Runnable thing that you want contained inside this task
 	 */
 	private Runnable runnable;
 
-	private boolean autoStart = true;
-	private boolean autoPause = false;
+	/**
+	 * if this task will automatically start(put in active runnables) when attached to a group
+	 */
+	public boolean autoStart = true;
+	/**
+	 * if this task will automatically stop(remove from active runnables) when runnable is run once
+	 */
+	public boolean autoPause = false;
 
 	//----------CONSTRUCTORS----------//
 	/**
@@ -66,6 +73,17 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 
 
 	//----------GETTER AND SETTER----------//
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void setName(String name) {
+		if(name == null) throw new IllegalArgumentException("name can not be null!");
+		this.name = name;
+	}
+
 	/**
 	 * sets the runnable action (the function that is run by taskRunner or run())
 	 * @param runnable the runnable action you want to run
@@ -84,28 +102,6 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	 */
 	public Runnable getRunnable() {
 		return runnable;
-	}
-
-	/**
-	 * @param autoStart
-	 */
-	public void setAutoStart(boolean autoStart) {
-		this.autoStart = autoStart;
-	}
-
-	/**
-	 * @return
-	 */
-	public boolean isAutoStartEnabled() {
-		return autoStart;
-	}
-
-	public boolean isAutoPauseEnabled() {
-		return autoPause;
-	}
-
-	public void setAutoPause(boolean autoPause) {
-		this.autoPause = autoPause;
 	}
 
 
@@ -127,15 +123,23 @@ public class Task extends NamedKeyedStructure<String, String, Group> implements 
 	}
 
 
-	//----------IMPLEMENT NamedKeyedStructure----------//
+	//----------IMPLEMENT KeyedParentStructure----------//
 	@Override
-	protected void onAttached() {
-		getParent().getAllRunnables().put(getParentKey(), this);
+	public void attachParent(String key, Group parent) {
+		super.attachParent(key, parent);
+		parent.attachChild(key, this);
+	}
+
+	public void attachParent(Group parent){
+		attachParent(name, parent);
 	}
 
 	@Override
-	protected void onDetach() {
-		getParent().getAllRunnables().remove(getParentKey());
+	public void detachParent() {
+		if(!isParentAttached()) return;
+
+		getParent().detachChild(getParentKey());
+		super.detachParent();
 	}
 
 
