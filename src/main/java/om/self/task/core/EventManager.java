@@ -22,13 +22,21 @@ public class EventManager {
         attachToEvent(event.name(), runnable);
     }
 
-    public boolean removeEvent(String event, Runnable runnable){
-        if(!events.contains(event)) return false;
-        return events.get(event).remove(runnable);
+    public void detachFromEvent(String event, Runnable runnable){
+        if(!events.contains(event)) return;
+        events.get(event).remove(runnable);
     }
 
-    public boolean removeEvent(Enum event, Runnable runnable){
-        return removeEvent(event.name(), runnable);
+    public void detachFromEvent(Enum event, Runnable runnable){
+        detachFromEvent(event.name(), runnable);
+    }
+
+    public void clearEvent(String event){
+        events.remove(event);
+    }
+
+    public void clearEvent(Enum event){
+        clearEvent(event.name());
     }
 
     public void triggerEvent(String event){
