@@ -5,7 +5,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class EventManager {
+    private static final EventManager instance = new EventManager();
     private final Hashtable<String, List<Runnable>> events = new Hashtable<>();
+
+
+    public static EventManager getInstance(){
+        return instance;
+    }
 
     public Hashtable<String, List<Runnable>> getEvents(){
         return events;

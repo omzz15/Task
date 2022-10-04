@@ -6,7 +6,7 @@
 
     <groupId>io.github.omzz15</groupId>
     <artifactId>task</artifactId>
-    <version>2.1.0-RELEASE</version>
+    <version>2.1.2-RELEASE</version>
 
     <build>
         <plugins>
