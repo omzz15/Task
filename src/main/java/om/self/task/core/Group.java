@@ -6,6 +6,8 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
+
 /**
  * A structure class that can manage and run {@link Runnable} like {@link Task}.
  */
@@ -283,9 +285,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return str;
     }
 
+
+
     private String getHashtableInfo(Map<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
         StringBuilder str = new StringBuilder();
-        String start = tab.repeat(startTabs);
+        String start = repeat(tab, startTabs);
 
         for (Map.Entry<String, Runnable> entry: table.entrySet()) {
             str.append("\n");
@@ -298,7 +302,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
             else if(r instanceof Group)
                 str.append(((Group) r).getInfo(tab, startTabs + 2, extend, getRunningInfo, true));
             else
-                str.append(start + tab.repeat(2) + r.toString());
+                str.append(start + repeat(tab, 2) + r.toString());
         }
 
         return str.toString();
@@ -314,7 +318,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return 1
      */
     public String getInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
-        String start = tab.repeat(startTabs);
+        String start = repeat(tab, startTabs);
         StringBuilder str = getBaseInfo(tab, start);
 
 

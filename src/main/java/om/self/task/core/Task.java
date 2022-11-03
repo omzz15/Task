@@ -5,6 +5,8 @@ import om.self.structure.parent.KeyedParentStructureImpl;
 
 import java.util.LinkedList;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
+
 /**
  * A simple task that will execute a Lambda Function with no input or output.
  * Ways to run are using the run() method or attaching to a TaskRunner.
@@ -208,7 +210,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @return 1
 	 */
 	public String getInfo(String tab, int startTabs, boolean extend){
-		String start = tab.repeat(startTabs);
+		String start = repeat(tab, startTabs);
 		StringBuilder str = getBaseInfo(tab, start);
 		if(extend){
 			str.append("\n");

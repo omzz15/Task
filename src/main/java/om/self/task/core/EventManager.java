@@ -3,6 +3,7 @@ package om.self.task.core;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EventManager extends KeyedBidirectionalStructure<String, EventManager, EventManager> {
     private static final EventManager instance = new EventManager(null);
@@ -32,7 +33,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
                 .values()
                 .stream()
                 .flatMap(event -> event.values().stream())
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public Collection<Runnable> getRunnables(String event){

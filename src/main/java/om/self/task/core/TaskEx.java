@@ -3,6 +3,8 @@ package om.self.task.core;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
+
 /**
  * 1
  */
@@ -255,7 +257,7 @@ public class TaskEx extends Task {
      */
     @Override
     public String getInfo(String tab, int startTabs, boolean extend) {
-        String start = tab.repeat(startTabs);
+        String start = repeat(tab, startTabs);
         StringBuilder str = getBaseInfo(tab, start);
 
         str.append("\n");
