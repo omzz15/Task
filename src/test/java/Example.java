@@ -15,7 +15,7 @@ public class Example {
         em1.attachToEvent(EventManager.CommonTrigger.START, "1 start", () -> System.out.println("1 started"));
         em1.attachToEvent(EventManager.CommonTrigger.START, "5 start", () -> System.out.println("5 started"));
 
-
+        em1.detachFromEvent(EventManager.CommonTrigger.START, "2 start");
 
         em1.triggerEvent(EventManager.CommonTrigger.START);
 

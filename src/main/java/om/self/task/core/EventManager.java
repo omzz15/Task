@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 public class EventManager extends KeyedBidirectionalStructure<String, EventManager, EventManager> {
     private static final EventManager instance = new EventManager(null);
     private final Hashtable<String, Hashtable<String, Runnable>> events = new Hashtable<>();
+    private static final List<Runnable> tickets = new LinkedList<>();
 
     private final String name;
 
@@ -59,7 +60,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     public void singleTimeAttachToEvent(String event, String runnableName, Runnable runnable){
         attachToEvent(event, runnableName, () -> {
             runnable.run();
-            detachFromEvent(event, runnableName);
+            tickets.add(() -> detachFromEvent(event, runnableName));
         });
     }
 
@@ -102,6 +103,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
 
     public void triggerEvent(String event){
         getRunnables(event).forEach(Runnable::run);
+        tickets.forEach(Runnable::run);
     }
 
     public void triggerEvent(Enum<?> event){
