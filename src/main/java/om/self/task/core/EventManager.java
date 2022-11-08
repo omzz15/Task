@@ -46,7 +46,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     }
 
     public void attachToEvent(String event, String runnableName, Runnable runnable){
-        if(!events.contains(event))
+        if(!events.containsKey(event))
             events.put(event, new Hashtable<>());
 
         events.get(event).put(runnableName, runnable);
@@ -74,7 +74,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     }
 
     public void detachFromEvent(String event, String runnableName){
-        if(!events.contains(event)) return;
+        if(!events.containsKey(event)) return;
         events.get(event).remove(runnableName);
     }
 
