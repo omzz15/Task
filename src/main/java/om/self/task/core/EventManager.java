@@ -56,6 +56,23 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
         attachToEvent(event.name(), runnableName, runnable);
     }
 
+    public void singleTimeAttachToEvent(String event, String runnableName, Runnable runnable){
+        attachToEvent(event, runnableName, () -> {
+            runnable.run();
+            detachFromEvent(event, runnableName);
+        });
+    }
+
+    /**
+     * this will add a runnable that automatically deletes itself after the event is triggered once.
+     * @param event
+     * @param runnableName
+     * @param runnable
+     */
+    public void singleTimeAttachToEvent(Enum event, String runnableName, Runnable runnable){
+        singleTimeAttachToEvent(event.name(), runnableName, runnable);
+    }
+
     public void detachFromEvent(String event, String runnableName){
         if(!events.contains(event)) return;
         events.get(event).remove(runnableName);
