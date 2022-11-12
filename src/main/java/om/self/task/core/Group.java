@@ -22,7 +22,8 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     /**
      * Whether this group should automatically be paused and started based on if there are any active runnables
      */
-    public boolean autoManage = true;
+    public AutoManagePolicy autoStartPolicy = AutoManagePolicy.ALWAYS;
+    public AutoManagePolicy autoStopPolicy = AutoManagePolicy.ONLY_WHEN_EMPTY;
 
     /**
      * the number of maximum active runnables at a time(-1 means infinity)
@@ -167,6 +168,10 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         activeRunnables.remove(key);
     }
 
+    public void clear(){
+        for (String s: getChildKeys()) detachChild(s);
+    }
+
     /**
      * 1
      * @param group 1
@@ -209,8 +214,9 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
             }
             case PAUSE: {
                 activeRunnables.remove(key);
-                if(autoManage && isParentAttached() && activeRunnables.isEmpty())
-                    runCommand(Command.QUE_PAUSE);
+                if(autoStopPolicy != AutoManagePolicy.DISABLED && isParentAttached() && activeRunnables.isEmpty())
+                    if(getParent().isRunning()) runCommand(Command.QUE_PAUSE);
+                    else runCommand(Command.PAUSE);
                 break;
             }
             case QUE_PAUSE: {
@@ -233,13 +239,14 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return true;
     }
 
-    private boolean startRunnable(String key){
+    protected boolean startRunnable(String key){
         Runnable runnable = getChild(key);
         if(runnable == null) return false;
         activeRunnables.put(key, runnable);
-        if(autoManage && isParentAttached() && !isRunning())
-            if(getParent().isRunning()) runCommand(Command.QUE_START);
-            else runCommand(Command.START);
+        if(isParentAttached() && !isRunning())
+            if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
+                if(getParent().isRunning()) runCommand(Command.QUE_START);
+                else runCommand(Command.START);
         return true;
     }
 
@@ -256,10 +263,13 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
 
     //----------IMPLEMENT Runnable----------//
+    protected void runQueuedActions(){
+        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
+    }
+
     @Override
     public void run(){
-        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
-
+        runQueuedActions();
         activeRunnables.forEach((k,v) -> v.run());
     }
 
@@ -380,5 +390,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         PAUSE,
         QUE_PAUSE,
         QUE_START,
+    }
+
+    public enum AutoManagePolicy{
+        DISABLED,
+        ONLY_WHEN_EMPTY,
+        ALWAYS
     }
 }

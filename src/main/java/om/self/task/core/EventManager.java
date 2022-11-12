@@ -147,7 +147,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
         return getInfo("","│\t");
     }
 
-    public enum CommonTrigger{
+    public enum CommonEvent{
         START,
         INIT,
         STOP
