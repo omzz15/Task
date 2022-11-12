@@ -13,10 +13,8 @@ import static org.apache.commons.lang3.StringUtils.repeat;
  */
 public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
-	/**
-	 * 1
-	 */
 	public static boolean logTasks = false;
+
 
 	private String name;
 
@@ -173,7 +171,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @return 1
 	 */
 	public boolean runCommand(Group.Command command, Object... args) {
-		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
+		if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
 		return false;
 	}
 

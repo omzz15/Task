@@ -2,9 +2,12 @@ package om.self.task.core;
 
 import om.self.structure.NamedStructure;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
+
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
 
@@ -235,7 +238,8 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         if(runnable == null) return false;
         activeRunnables.put(key, runnable);
         if(autoManage && isParentAttached() && !isRunning())
-            runCommand(Command.QUE_START);
+            if(getParent().isRunning()) runCommand(Command.QUE_START);
+            else runCommand(Command.START);
         return true;
     }
 
@@ -268,7 +272,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param start 1
      * @return 1
      */
-    protected StringBuilder getBaseInfo(String tab, String start){
+    private StringBuilder getBaseInfo(String tab, String start){
         StringBuilder str = new StringBuilder(start);
         str.append(getName() + " Info:");
         str.append("\n");
@@ -287,7 +291,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
 
 
-    private String getHashtableInfo(Map<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+    private String getMapInfo(Map<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
         StringBuilder str = new StringBuilder();
         String start = repeat(tab, startTabs);
 
@@ -300,7 +304,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
             if(r instanceof Task)
                 str.append(((Task) r).getInfo(tab, startTabs + 2, extend));
             else if(r instanceof Group)
-                str.append(((Group) r).getInfo(tab, startTabs + 2, extend, getRunningInfo, true));
+                str.append(((Group) r).getFullInfo(tab, startTabs + 2, extend, getRunningInfo, true));
             else
                 str.append(start + repeat(tab, 2) + r.toString());
         }
@@ -317,7 +321,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param getAllInfo 1
      * @return 1
      */
-    public String getInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+    public String getFullInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
         String start = repeat(tab, startTabs);
         StringBuilder str = getBaseInfo(tab, start);
 
@@ -325,19 +329,44 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         str.append("\n");
         str.append(start + tab + "All: " + getChildrenAndKeys().size());
         if(getAllInfo)
-            str.append(getHashtableInfo(getChildrenAndKeys(), tab, startTabs + 1, extend, getRunningInfo, true));
+            str.append(getMapInfo(getChildrenAndKeys(), tab, startTabs + 1, extend, getRunningInfo, true));
 
         str.append("\n");
         str.append(start + tab + "Active: " + activeRunnables.size());
         if(getRunningInfo)
-            str.append(getHashtableInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
+            str.append(getMapInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
 
+        return str.toString();
+    }
+
+    public String getInfo(String tab, int startTabs){
+        return getInfo(repeat(tab, startTabs), tab);
+    }
+
+    public String getInfo(String start, String tab){
+        String str = start + start + "All:\n" +
+                start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
+                getInfoRecursively(start + repeat(tab, 2), tab, g -> g.getChildrenAndKeys().entrySet()) +
+                "\n" + start + "Active:\n" +
+                start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
+                getInfoRecursively(start + repeat(tab, 2), tab, g -> g.activeRunnables.entrySet());
+
+        return str;
+    }
+
+    private String getInfoRecursively(String start, String tab, Function<Group, Set<Map.Entry<String, Runnable>>> func){
+        StringBuilder str = new StringBuilder();
+        for (Map.Entry<String, Runnable> entry : func.apply(this)) {
+            str.append(start).append(entry.getKey()).append(": ").append(entry.getValue().getClass().getSimpleName()).append("\n");
+            if(entry.getValue() instanceof Group)
+                str.append(((Group) entry.getValue()).getInfoRecursively(start + tab, tab, func));
+        }
         return str.toString();
     }
 
     @Override
     public String toString() {
-        return getInfo("│\t", 0, false, true, true);
+        return getInfo("","│\t");
     }
 
     //----------Other----------//

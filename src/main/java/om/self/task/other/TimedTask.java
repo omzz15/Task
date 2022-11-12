@@ -49,6 +49,11 @@ public class TimedTask extends TaskEx {
         addStep(step, () -> (System.currentTimeMillis() - startTime >= time));
     }
 
+    public void addDelay(int delay){
+        addStep(() -> {startTime = System.currentTimeMillis();});
+        addStep(() -> (System.currentTimeMillis() - startTime >= delay));
+    }
+
     /**
      * 1
      * @return 1

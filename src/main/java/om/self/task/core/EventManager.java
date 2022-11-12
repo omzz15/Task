@@ -5,6 +5,8 @@ import om.self.structure.bidirectional.KeyedBidirectionalStructure;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
+
 public class EventManager extends KeyedBidirectionalStructure<String, EventManager, EventManager> {
     private static final EventManager instance = new EventManager(null);
     private final Hashtable<String, Hashtable<String, Runnable>> events = new Hashtable<>();
@@ -123,6 +125,26 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
 
     public void attachParent(EventManager eventManager) {
         super.attachParent(getName(), eventManager);
+    }
+
+    public String getInfo(String start, String tab){
+        StringBuilder str = new StringBuilder(start);
+        str.append(getName()).append(": EventManager").append("(dir: ").append(getDir()).append(")\n");
+        for (Map.Entry<String, Hashtable<String, Runnable>> event: events.entrySet()) {
+            str.append(start).append(tab).append(event.getKey()).append(": Event\n");
+            for(String runnable : event.getValue().keySet())
+                str.append(start).append(repeat(tab, 2)).append(runnable).append(": Runnable\n");
+        }
+        for (EventManager em: getChildren()) {
+            str.append(em.getInfo(start + tab, tab));
+        }
+
+        return str.toString();
+    }
+
+    @Override
+    public String toString() {
+        return getInfo("","│\t");
     }
 
     public enum CommonTrigger{

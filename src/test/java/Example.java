@@ -1,47 +1,69 @@
 import om.self.task.core.EventManager;
 import om.self.task.core.Group;
-import om.self.task.core.OrderedEventManager;
-import om.self.task.other.IncrementedTask;
-
-import java.util.LinkedList;
-import java.util.List;
+import om.self.task.core.Task;
+import om.self.task.other.TimedTask;
 
 public class Example {
     public static void main(String[] args) {
-        EventManager em1 = new OrderedEventManager("main");
-        em1.attachToEvent(EventManager.CommonTrigger.START, "2 start", () -> System.out.println("2 started"));
-        em1.attachToEvent(EventManager.CommonTrigger.START, "3 start", () -> System.out.println("3 started"));
-        em1.attachToEvent(EventManager.CommonTrigger.START, "4 start", () -> System.out.println("4 started"));
-        em1.attachToEvent(EventManager.CommonTrigger.START, "1 start", () -> System.out.println("1 started"));
-        em1.attachToEvent(EventManager.CommonTrigger.START, "5 start", () -> System.out.println("5 started"));
+//        Group g1 = new Group("g1");
+//
+//        g1.attachChild("r1", () -> {});
+//        g1.attachChild("r2", () -> {});
+//        new Task("t1", g1);
+//        new TimedTask("tt1", g1);
+//
+//        Group g2 = new Group("g2", g1);
+//
+//        g2.attachChild("r1", () -> {});
+//        g2.attachChild("r2", () -> {});
+//        new Task("t1", g2);
+//        new TimedTask("tt1", g2);
+//
+//        Group g3 = new Group("g3", g1);
+//
+//        g3.attachChild("r1", () -> {});
+//        g3.attachChild("r2", () -> {});
+//        new Task("t1", g3);
+//        new TimedTask("tt1", g3);
+//
+//        Group g4 = new Group("g4", g2);
+//
+//        g4.attachChild("r1", () -> {});
+//        g4.attachChild("r2", () -> {});
+//        new Task("t1", g4);
+//        new TimedTask("tt1", g4).addDelay(1000);
+//
+//        //g4.runCommand(Group.Command.START);
+//        g1.run();
+//        g1.run();
+//
+//        System.out.println(g1.getInfo("│\t", 0));
 
-        em1.detachFromEvent(EventManager.CommonTrigger.START, "2 start");
+        EventManager em1 = new EventManager("m1");
+        em1.attachToEvent("e1", "r1", () -> {});
+        em1.attachToEvent("e1", "r2", () -> {});
+        em1.attachToEvent("e2", "r1", () -> {});
 
-        em1.triggerEvent(EventManager.CommonTrigger.START);
+        EventManager em2 = new EventManager("m2", em1);
+        em2.attachToEvent("e1", "r1", () -> {});
+        em2.attachToEvent("e1", "r2", () -> {});
+        em2.attachToEvent("e2", "r1", () -> {});
 
+        EventManager em3 = new EventManager("m3", em1);
+        em3.attachToEvent("e1", "r1", () -> {});
+        em3.attachToEvent("e1", "r2", () -> {});
+        em3.attachToEvent("e2", "r1", () -> {});
 
-//        Group g1 = new Group("g");
-//        g1.setMaxActiveRunnables(1);
-//
-//        IncrementedTask t = new IncrementedTask("t", g1);
-//        t.addIncrementedStep(() -> System.out.println("test " + t.getI()), 10);
-//
-//        IncrementedTask t2 = new IncrementedTask("t2");
-//        t2.autoStart = false;
-//        t2.attachParent(g1);
-//        t2.addIncrementedStep(() -> System.out.println("2 test " + t2.getI()), 10);
-//
-//        System.out.println(g1);
-//
-//        for (int i = 0; i < 5; i++) {
-//            g1.run();
-//        }
-//
-//        System.out.println(g1.runKeyedCommand("t2", Group.Command.START, true));
-//
-//        while (!g1.isDone())
-//            g1.run();
-//
-//        System.out.println(g1);
+        EventManager em4 = new EventManager("m4", em3);
+        em4.attachToEvent("e1", "r1", () -> {});
+        em4.attachToEvent("e1", "r2", () -> {});
+        em4.attachToEvent("e2", "r1", () -> {});
+
+        EventManager em5 = new EventManager("m5", em2);
+        em5.attachToEvent("e1", "r1", () -> {});
+        em5.attachToEvent("e1", "r2", () -> {});
+        em5.attachToEvent("e2", "r1", () -> {});
+
+        System.out.println(em1);
     }
 }
