@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class OrderedGroup extends Group{
+    public boolean allowMultirun = true;
+
     private final List<Runnable> orderedActiveRunnable = new LinkedList<>();
 
     public OrderedGroup(String name) {
@@ -18,13 +20,25 @@ public class OrderedGroup extends Group{
         super(name, parentKey, parent);
     }
 
+    public List<Runnable> getOrderedActiveRunnable() {
+        return orderedActiveRunnable;
+    }
+
     @Override
-    protected boolean startRunnable(String key) {
-        if(super.startRunnable(key)){
-            orderedActiveRunnable.add(getActiveRunnable(key));
-            return true;
+    protected void addToActive(String key, Runnable runnable, Object... args) {
+        super.addToActive(key, runnable, args);
+        if(!allowMultirun && orderedActiveRunnable.contains(runnable)) return;
+        try{
+            orderedActiveRunnable.add((int) args[0], runnable);
+        } catch (Exception e) {
+            orderedActiveRunnable.add(runnable);
         }
-        return false;
+    }
+
+    @Override
+    protected void removeFromActive(String key, Object... args) {
+        orderedActiveRunnable.remove(getActiveRunnable(key));
+        super.removeFromActive(key, args);
     }
 
     @Override

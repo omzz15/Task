@@ -22,7 +22,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     /**
      * Whether this group should automatically be paused and started based on if there are any active runnables
      */
-    public AutoManagePolicy autoStartPolicy = AutoManagePolicy.ALWAYS;
+    public AutoManagePolicy autoStartPolicy = AutoManagePolicy.ONLY_WHEN_EMPTY;
     public AutoManagePolicy autoStopPolicy = AutoManagePolicy.ONLY_WHEN_EMPTY;
 
     /**
@@ -165,7 +165,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     //----------IMPLEMENT Structure methods----------//
     @Override
     public void onChildDetach(String key, Runnable child) {
-        activeRunnables.remove(key);
+        removeFromActive(key);
     }
 
     public void clear(){
@@ -207,13 +207,13 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
                     if(!force) return false;
 
-                    activeRunnables.remove(activeRunnables.keys().nextElement());
+                    removeFromActive(activeRunnables.keys().nextElement());
                 }
 
-                return startRunnable(key);
+                return startRunnable(key, args);
             }
             case PAUSE: {
-                activeRunnables.remove(key);
+                removeFromActive(key);
                 if(autoStopPolicy != AutoManagePolicy.DISABLED && isParentAttached() && activeRunnables.isEmpty())
                     if(getParent().isRunning()) runCommand(Command.QUE_PAUSE);
                     else runCommand(Command.PAUSE);
@@ -226,7 +226,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
                 break;
             }
             case QUE_START:{
-                Runnable start = () -> runKeyedCommand(key, Command.START);
+                Runnable start = () -> runKeyedCommand(key, Command.START, args);
                 if(!queuedGroupActions.contains(start))
                     addToQueuedGroupActions(start);
                 break;
@@ -239,10 +239,17 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return true;
     }
 
-    protected boolean startRunnable(String key){
+    protected void addToActive(String key, Runnable runnable, Object... args){
+        //activeRunnables.put(key, runnable);
+    }
+    protected void removeFromActive(String key, Object... args){
+        //activeRunnables.remove(key);
+    }
+
+    private boolean startRunnable(String key, Object... args){
         Runnable runnable = getChild(key);
         if(runnable == null) return false;
-        activeRunnables.put(key, runnable);
+        addToActive(key, runnable, args);
         if(isParentAttached() && !isRunning())
             if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
                 if(getParent().isRunning()) runCommand(Command.QUE_START);
@@ -284,11 +291,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      */
     private StringBuilder getBaseInfo(String tab, String start){
         StringBuilder str = new StringBuilder(start);
-        str.append(getName() + " Info:");
-        str.append("\n");
-        str.append(start + tab + "Type: " + getClass().getSimpleName());
-        str.append("\n");
-        str.append(start + tab + "Status: ");
+        str.append(getName()).append(" Info:")
+                .append("\n")
+                .append(start).append(tab).append("Type: ").append(getClass().getSimpleName())
+                .append("\n")
+                .append(start).append(tab).append("Status: ");
         if(!isParentAttached())
             str.append("No Parent");
         else if (isRunning())
@@ -306,9 +313,9 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         String start = repeat(tab, startTabs);
 
         for (Map.Entry<String, Runnable> entry: table.entrySet()) {
-            str.append("\n");
-            str.append(start + tab + "Key: " + entry.getKey());
-            str.append("\n");
+            str.append("\n")
+                    .append(start).append(tab).append("Key: ").append(entry.getKey())
+            .append("\n");
 
             Runnable r = entry.getValue();
             if(r instanceof Task)
@@ -336,13 +343,12 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         StringBuilder str = getBaseInfo(tab, start);
 
 
-        str.append("\n");
-        str.append(start + tab + "All: " + getChildrenAndKeys().size());
+        str.append("\n")
+                .append(start).append(tab).append("All: ").append(getChildrenAndKeys().size());
         if(getAllInfo)
             str.append(getMapInfo(getChildrenAndKeys(), tab, startTabs + 1, extend, getRunningInfo, true));
 
-        str.append("\n");
-        str.append(start + tab + "Active: " + activeRunnables.size());
+        str.append("\n").append(start).append(tab).append("Active: ").append(activeRunnables.size());
         if(getRunningInfo)
             str.append(getMapInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
 
@@ -354,14 +360,12 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     }
 
     public String getInfo(String start, String tab){
-        String str = start + start + "All:\n" +
+        return start + start + "All:\n" +
                 start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
                 getInfoRecursively(start + repeat(tab, 2), tab, g -> g.getChildrenAndKeys().entrySet()) +
                 "\n" + start + "Active:\n" +
                 start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
                 getInfoRecursively(start + repeat(tab, 2), tab, g -> g.activeRunnables.entrySet());
-
-        return str;
     }
 
     private String getInfoRecursively(String start, String tab, Function<Group, Set<Map.Entry<String, Runnable>>> func){

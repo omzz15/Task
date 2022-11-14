@@ -1,5 +1,6 @@
 import om.self.task.core.EventManager;
 import om.self.task.core.Group;
+import om.self.task.core.OrderedGroup;
 import om.self.task.core.Task;
 import om.self.task.other.TimedTask;
 
@@ -39,31 +40,46 @@ public class Example {
 //
 //        System.out.println(g1.getInfo("│\t", 0));
 
-        EventManager em1 = new EventManager("m1");
-        em1.attachToEvent("e1", "r1", () -> {});
-        em1.attachToEvent("e1", "r2", () -> {});
-        em1.attachToEvent("e2", "r1", () -> {});
+//        EventManager em1 = new EventManager("m1");
+//        em1.attachToEvent("e1", "r1", () -> {});
+//        em1.attachToEvent("e1", "r2", () -> {});
+//        em1.attachToEvent("e2", "r1", () -> {});
+//
+//        EventManager em2 = new EventManager("m2", em1);
+//        em2.attachToEvent("e1", "r1", () -> {});
+//        em2.attachToEvent("e1", "r2", () -> {});
+//        em2.attachToEvent("e2", "r1", () -> {});
+//
+//        EventManager em3 = new EventManager("m3", em1);
+//        em3.attachToEvent("e1", "r1", () -> {});
+//        em3.attachToEvent("e1", "r2", () -> {});
+//        em3.attachToEvent("e2", "r1", () -> {});
+//
+//        EventManager em4 = new EventManager("m4", em3);
+//        em4.attachToEvent("e1", "r1", () -> {});
+//        em4.attachToEvent("e1", "r2", () -> {});
+//        em4.attachToEvent("e2", "r1", () -> {});
+//
+//        EventManager em5 = new EventManager("m5", em2);
+//        em5.attachToEvent("e1", "r1", () -> {});
+//        em5.attachToEvent("e1", "r2", () -> {});
+//        em5.attachToEvent("e2", "r1", () -> {});
+//
+//        System.out.println(em1);
 
-        EventManager em2 = new EventManager("m2", em1);
-        em2.attachToEvent("e1", "r1", () -> {});
-        em2.attachToEvent("e1", "r2", () -> {});
-        em2.attachToEvent("e2", "r1", () -> {});
 
-        EventManager em3 = new EventManager("m3", em1);
-        em3.attachToEvent("e1", "r1", () -> {});
-        em3.attachToEvent("e1", "r2", () -> {});
-        em3.attachToEvent("e2", "r1", () -> {});
+        OrderedGroup g1 = new OrderedGroup("main");
 
-        EventManager em4 = new EventManager("m4", em3);
-        em4.attachToEvent("e1", "r1", () -> {});
-        em4.attachToEvent("e1", "r2", () -> {});
-        em4.attachToEvent("e2", "r1", () -> {});
+        g1.attachChild("t1", () -> System.out.println("task 1"));
+        g1.attachChild("t2", () -> System.out.println("task 2"));
+        g1.attachChild("t3", () -> System.out.println("task 3"));
+        g1.attachChild("t4", () -> System.out.println("task 4"));
 
-        EventManager em5 = new EventManager("m5", em2);
-        em5.attachToEvent("e1", "r1", () -> {});
-        em5.attachToEvent("e1", "r2", () -> {});
-        em5.attachToEvent("e2", "r1", () -> {});
+        g1.runKeyedCommand("t1", Group.Command.START);
+        g1.runKeyedCommand("t3", Group.Command.START);
+        g1.runKeyedCommand("t4", Group.Command.START);
+        g1.runKeyedCommand("t2", Group.Command.START, 0);
 
-        System.out.println(em1);
+        g1.run();
     }
 }
