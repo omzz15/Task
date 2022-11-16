@@ -4,6 +4,9 @@ import om.self.task.core.OrderedGroup;
 import om.self.task.core.Task;
 import om.self.task.other.TimedTask;
 
+import java.util.AbstractMap;
+import java.util.Map;
+
 public class Example {
     public static void main(String[] args) {
 //        Group g1 = new Group("g1");
@@ -78,7 +81,7 @@ public class Example {
         g1.runKeyedCommand("t1", Group.Command.START);
         g1.runKeyedCommand("t3", Group.Command.START);
         g1.runKeyedCommand("t4", Group.Command.START);
-        g1.runKeyedCommand("t2", Group.Command.START, 0);
+        g1.runKeyedCommand("t2", Group.Command.START, new AbstractMap.SimpleEntry<>(Group.CommandVars.location, 0));
 
         g1.run();
     }

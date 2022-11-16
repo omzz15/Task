@@ -4,6 +4,7 @@ import om.self.structure.NamedStructure;
 import om.self.structure.parent.KeyedParentStructureImpl;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
 
@@ -170,7 +171,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @param args 1
 	 * @return 1
 	 */
-	public boolean runCommand(Group.Command command, Object... args) {
+	public boolean runCommand(Group.Command command, Map.Entry<String, Object>... args) {
 		if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
 		return false;
 	}

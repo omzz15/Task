@@ -3,10 +3,7 @@ package om.self.task.core;
 import om.self.structure.NamedStructure;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
 
-import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
@@ -15,6 +12,12 @@ import static org.apache.commons.lang3.StringUtils.repeat;
  * A structure class that can manage and run {@link Runnable} like {@link Task}.
  */
 public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> implements Runnable, NamedStructure<String>{
+    public static final class CommandVars{
+        public static final String forceActiveRunnable = "force active runnable";
+        public static final String location = "location";
+        public static final String allowMultiRun = "allow multi run";
+    }
+
     private String name;
     private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
     private final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
@@ -86,7 +89,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     /**
      * gets all active(running) runnables
      * @return {@link Group#activeRunnables}
-     * @apiNote DO NOT use this to add or remove from the active runnables. Use {@link Group#runKeyedCommand(String, Command, Object...)} because there are checks that need to be run.
+     * @apiNote DO NOT use this to add or remove from the active runnables. Use {@link Group#runKeyedCommand(String, Command, Map.Entry[])} because there are checks that need to be run.
      */
     public Hashtable<String, Runnable> getActiveRunnables() {
         return activeRunnables;
@@ -196,14 +199,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param args 1
      * @return 1
      */
-    public boolean runKeyedCommand(String key, Command command, Object... args){
+    public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
         switch (command){
             case START: {
                 if(activeRunnables.size() == maxActiveRunnables){
-                    boolean force = forceActiveRunnablesDefault;
-                    try{
-                        force = (boolean) args[0];
-                    } catch (Exception ignore){}
+                    boolean force = (boolean)getArg(CommandVars.forceActiveRunnable).orElse(forceActiveRunnablesDefault);
 
                     if(!force) return false;
 
@@ -239,21 +239,35 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return true;
     }
 
-    protected void addToActive(String key, Runnable runnable, Object... args){
-        //activeRunnables.put(key, runnable);
-    }
-    protected void removeFromActive(String key, Object... args){
-        //activeRunnables.remove(key);
+    protected Optional<Object> getArg(String name, Map.Entry<String, Object>... args){
+        for (Map.Entry<String, Object> arg: args){
+            if(Objects.equals(arg.getKey(), name)) return Optional.of(arg.getValue());
+        }
+        return Optional.empty();
     }
 
-    private boolean startRunnable(String key, Object... args){
+    protected<T> T getArg(String name, T defaultVal, Map.Entry<String, Object>... args){
+        for (Map.Entry<String, Object> arg: args){
+            if(Objects.equals(arg.getKey(), name)) return (T)(arg.getValue());
+        }
+        return defaultVal;
+    }
+
+    protected void addToActive(String key, Runnable runnable, Map.Entry<String, Object>... args){
+        activeRunnables.put(key, runnable);
+    }
+    protected void removeFromActive(String key, Map.Entry<String, Object>... args){
+        activeRunnables.remove(key);
+    }
+
+    private boolean startRunnable(String key, Map.Entry<String, Object>... args){
         Runnable runnable = getChild(key);
         if(runnable == null) return false;
         addToActive(key, runnable, args);
         if(isParentAttached() && !isRunning())
             if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
-                if(getParent().isRunning()) runCommand(Command.QUE_START);
-                else runCommand(Command.START);
+                if(getParent().isRunning()) runCommand(Command.QUE_START, args);
+                else runCommand(Command.START, args);
         return true;
     }
 
@@ -263,7 +277,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param args 1
      * @return 1
      */
-    public boolean runCommand(Command command, Object... args) {
+    public boolean runCommand(Command command, Map.Entry<String, Object>... args) {
         if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
         return false;
     }

@@ -2,9 +2,11 @@ package om.self.task.core;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class OrderedGroup extends Group{
-    public boolean allowMultirun = true;
+    public boolean allowMultiRunDefault = true;
 
     private final List<Runnable> orderedActiveRunnable = new LinkedList<>();
 
@@ -25,19 +27,20 @@ public class OrderedGroup extends Group{
     }
 
     @Override
-    protected void addToActive(String key, Runnable runnable, Object... args) {
+    protected void addToActive(String key, Runnable runnable, Map.Entry<String, Object>... args) {
         super.addToActive(key, runnable, args);
-        if(!allowMultirun && orderedActiveRunnable.contains(runnable)) return;
-        try{
-            orderedActiveRunnable.add((int) args[0], runnable);
-        } catch (Exception e) {
-            orderedActiveRunnable.add(runnable);
-        }
+
+
+        if(!getArg(CommandVars.allowMultiRun, allowMultiRunDefault, args) && orderedActiveRunnable.contains(runnable)) return;
+        Optional<Object> location = getArg(CommandVars.location, args);
+        if(location.isPresent()) orderedActiveRunnable.add((int)location.get(), runnable);
+        else orderedActiveRunnable.add(runnable);
     }
 
     @Override
-    protected void removeFromActive(String key, Object... args) {
-        orderedActiveRunnable.remove(getActiveRunnable(key));
+    protected void removeFromActive(String key, Map.Entry<String, Object>... args) {
+        while (orderedActiveRunnable.contains(getActiveRunnable(key)))
+            orderedActiveRunnable.remove(getActiveRunnable(key));
         super.removeFromActive(key, args);
     }
 
