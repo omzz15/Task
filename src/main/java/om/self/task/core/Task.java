@@ -159,7 +159,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	public void run(){
 		runnable.run();
 		if(isRunning() && autoPause)
-			runCommand(Group.Command.QUE_PAUSE);
+			runCommand(Group.Command.PAUSE);
 	}
 
 

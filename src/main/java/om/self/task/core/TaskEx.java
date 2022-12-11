@@ -78,7 +78,7 @@ public class TaskEx extends Task {
         //auto pause/reset
         if (curr >= steps.size()) {
             done = true;
-            if(autoPause && isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
+            if(autoPause && isParentAttached()) runCommand(Group.Command.PAUSE);
             if(autoReset && curr != 0) reset();
             return;
         }
@@ -126,9 +126,8 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
-     *
-     * @param step 1
+     * runs the runnable once then move on to the next step. Equivalent of addStep(Runnable, () -> true)
+     * @param step the thing you want run once
      */
     public void addStep(Runnable step) {
         addStep(step, () -> true);
@@ -159,6 +158,22 @@ public class TaskEx extends Task {
         if(steps.size() == 1) {
             onEmptyAddStep();
         }
+    }
+
+    public void waitForEvent(String event, EventManager manager){
+        addStep(() -> {
+            getParent().setWaiting(true);
+            manager.singleTimeAttachToEvent(event, "start task - " + getName(), () -> {
+                getParent().setWaiting(false);
+                runCommand(Group.Command.START);
+            });
+            runCommand(Group.Command.PAUSE);
+        });
+    }
+
+    public void waitForEvent(String event, EventManager manager, Runnable runnable){
+        addStep(() -> manager.singleTimeAttachToEvent(event, "next step on task - " + getName(), this::setToNextStep));
+        addStep(runnable, () -> false);
     }
 
     /**

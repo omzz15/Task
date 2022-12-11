@@ -1,7 +1,4 @@
-import om.self.task.core.EventManager;
-import om.self.task.core.Group;
-import om.self.task.core.OrderedGroup;
-import om.self.task.core.Task;
+import om.self.task.core.*;
 import om.self.task.other.TimedTask;
 
 import java.util.AbstractMap;
@@ -71,18 +68,39 @@ public class Example {
 //        System.out.println(em1);
 
 
-        OrderedGroup g1 = new OrderedGroup("main");
+        Group main = new Group("main");
+        GroupEx sub = new GroupEx("sub", main);
+        new Task("test", sub).setRunnable(() -> System.out.println("hello from sub"));
 
-        g1.attachChild("t1", () -> System.out.println("task 1"));
-        g1.attachChild("t2", () -> System.out.println("task 2"));
-        g1.attachChild("t3", () -> System.out.println("task 3"));
-        g1.attachChild("t4", () -> System.out.println("task 4"));
 
-        g1.runKeyedCommand("t1", Group.Command.START);
-        g1.runKeyedCommand("t3", Group.Command.START);
-        g1.runKeyedCommand("t4", Group.Command.START);
-        g1.runKeyedCommand("t2", Group.Command.START, new AbstractMap.SimpleEntry<>(Group.CommandVars.location, 0));
+        TaskEx t = new TaskEx("test", main);
+        EventManager em = new EventManager("main");
 
-        g1.run();
+        sub.waitForEvent("trigger", em);//, () -> System.out.println("sub parked"));
+
+
+        t.addStep(() -> System.out.println("pre event"));
+        t.waitForEvent("trigger", em);
+        t.addStep(() -> System.out.println("waiting..."));
+        t.waitForEvent("trigger", em, () -> System.out.println("waiting"));
+        t.addStep(() -> System.out.println("post event"));
+
+        System.out.println(main);
+        main.run();
+        main.run();
+        System.out.println(em);
+        main.run();
+        System.out.println(main);
+
+        while(!main.isDone()){
+            main.run();
+            if(Math.random() < 0.05)
+            {
+                System.out.println(em);
+                em.triggerEvent("trigger");
+                main.run();
+                break;
+            }
+        }
     }
 }

@@ -19,8 +19,8 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     }
 
     private String name;
-    private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
-    private final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
+    protected final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
+    protected final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
 
     /**
      * Whether this group should automatically be paused and started based on if there are any active runnables
@@ -38,6 +38,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      */
     public boolean forceActiveRunnablesDefault = false;
 
+    private boolean waiting = false;
 
     //----------CONSTRUCTOR----------//
     /**
@@ -137,6 +138,23 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         this.maxActiveRunnables = maxActiveRunnables;
     }
 
+    public boolean isWaiting() {
+        return waiting;
+    }
+
+    /**
+     * a flag that tells this that it is still waiting for something so {@link Group#isDone()} can not be true. This will not affect auto pause so the group is free to pause if there are no other active runnable
+     * @param waiting if this group is waiting for something
+     */
+    public void setWaiting(boolean waiting) {
+        setWaiting(waiting, true);
+    }
+
+    public void setWaiting(boolean waiting, boolean propagate) {
+        this.waiting = waiting;
+        if(isParentAttached() && propagate)
+            getParent().setWaiting(waiting);
+    }
 
     //----------CHECKS----------//
     /**
@@ -152,7 +170,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return 1
      */
     public boolean isDone(){
-        return activeRunnables.isEmpty() && queuedGroupActions.isEmpty();
+        return activeRunnables.isEmpty() && queuedGroupActions.isEmpty() && !waiting;
     }
 
     /**
@@ -202,33 +220,31 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
         switch (command){
             case START: {
-                if(activeRunnables.size() == maxActiveRunnables){
-                    boolean force = (boolean)getArg(CommandVars.forceActiveRunnable).orElse(forceActiveRunnablesDefault);
+                try {
+                    if (activeRunnables.size() == maxActiveRunnables) {
+                        boolean force = getArg(CommandVars.forceActiveRunnable, forceActiveRunnablesDefault, args);
+                        if (!force) return false;
 
-                    if(!force) return false;
+                        removeFromActive(activeRunnables.keys().nextElement());
+                    }
 
-                    removeFromActive(activeRunnables.keys().nextElement());
+                    return startRunnable(key, args);
+                } catch (ConcurrentModificationException ignore){
+                    Runnable start = () -> runKeyedCommand(key, Command.START, args);
+                    if(!queuedGroupActions.contains(start))
+                        addToQueuedGroupActions(start);
                 }
-
-                return startRunnable(key, args);
             }
             case PAUSE: {
-                removeFromActive(key);
-                if(autoStopPolicy != AutoManagePolicy.DISABLED && isParentAttached() && activeRunnables.isEmpty())
-                    if(getParent().isRunning()) runCommand(Command.QUE_PAUSE);
-                    else runCommand(Command.PAUSE);
-                break;
-            }
-            case QUE_PAUSE: {
-                Runnable pause = () -> runKeyedCommand(key, Command.PAUSE);
-                if(!queuedGroupActions.contains(pause))
-                    addToQueuedGroupActions(pause);
-                break;
-            }
-            case QUE_START:{
-                Runnable start = () -> runKeyedCommand(key, Command.START, args);
-                if(!queuedGroupActions.contains(start))
-                    addToQueuedGroupActions(start);
+                try {
+                    removeFromActive(key);
+                    if (autoStopPolicy != AutoManagePolicy.DISABLED && isParentAttached() && activeRunnables.isEmpty())
+                        runCommand(Command.PAUSE);
+                } catch (ConcurrentModificationException ignore){
+                    Runnable pause = () -> runKeyedCommand(key, Command.PAUSE);
+                    if(!queuedGroupActions.contains(pause))
+                        addToQueuedGroupActions(pause);
+                }
                 break;
             }
             case NONE:
@@ -266,7 +282,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         addToActive(key, runnable, args);
         if(isParentAttached() && !isRunning())
             if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
-                if(getParent().isRunning()) runCommand(Command.QUE_START, args);
+                if(getParent().isRunning()) runCommand(Command.START, args);
                 else runCommand(Command.START, args);
         return true;
     }
@@ -282,17 +298,27 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return false;
     }
 
+    public void waitForEvent(String event, EventManager manager){
+        setWaiting(true);
+        manager.singleTimeAttachToEvent(event, "start group - " + getName(), () -> {
+            setWaiting(false);
+            runCommand(Group.Command.START);
+        });
+        runCommand(Command.PAUSE);
+    }
 
     //----------IMPLEMENT Runnable----------//
     protected void runQueuedActions(){
-        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
+
     }
 
     @Override
     public void run(){
-        runQueuedActions();
-        activeRunnables.forEach((k,v) -> v.run());
+        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
+        activeRunnables.forEach((k, v) -> v.run());
     }
+
+
 
 
     //----------INFO----------//
@@ -406,8 +432,6 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         NONE,
         START,
         PAUSE,
-        QUE_PAUSE,
-        QUE_START,
     }
 
     public enum AutoManagePolicy{
