@@ -19,7 +19,7 @@ public class TaskEx extends Task {
     /**
      * 1
      */
-    public boolean autoReset = true;
+    public boolean autoReset = false;
 
 
     //----------CONSTRUCTORS----------//

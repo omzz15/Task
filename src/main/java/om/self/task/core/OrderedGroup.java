@@ -4,11 +4,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class OrderedGroup extends Group{
     public boolean allowMultiRunDefault = true;
 
-    private final List<Runnable> orderedActiveRunnable = new LinkedList<>();
+    private final CopyOnWriteArrayList<Runnable> orderedActiveRunnable = new CopyOnWriteArrayList<>();
 
     public OrderedGroup(String name) {
         super(name);

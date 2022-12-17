@@ -4,6 +4,7 @@ import om.self.structure.NamedStructure;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
@@ -19,7 +20,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     }
 
     private String name;
-    protected final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
+    protected final ConcurrentHashMap<String, Runnable> activeRunnables = new ConcurrentHashMap<>();
     protected final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
 
     /**
@@ -92,7 +93,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return {@link Group#activeRunnables}
      * @apiNote DO NOT use this to add or remove from the active runnables. Use {@link Group#runKeyedCommand(String, Command, Map.Entry[])} because there are checks that need to be run.
      */
-    public Hashtable<String, Runnable> getActiveRunnables() {
+    public ConcurrentHashMap<String, Runnable> getActiveRunnables() {
         return activeRunnables;
     }
 
@@ -220,39 +221,25 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
         switch (command){
             case START: {
-                try {
-                    if (activeRunnables.size() == maxActiveRunnables) {
-                        boolean force = getArg(CommandVars.forceActiveRunnable, forceActiveRunnablesDefault, args);
-                        if (!force) return false;
+                if (activeRunnables.size() == maxActiveRunnables) {
+                    boolean force = getArg(CommandVars.forceActiveRunnable, forceActiveRunnablesDefault, args);
+                    if (!force) return false;
 
-                        removeFromActive(activeRunnables.keys().nextElement());
-                    }
-
-                    return startRunnable(key, args);
-                } catch (ConcurrentModificationException ignore){
-                    Runnable start = () -> runKeyedCommand(key, Command.START, args);
-                    if(!queuedGroupActions.contains(start))
-                        addToQueuedGroupActions(start);
+                    removeFromActive(activeRunnables.keys().nextElement());
                 }
+                return startRunnable(key, args);
             }
             case PAUSE: {
-                try {
-                    removeFromActive(key);
-                    if (autoStopPolicy != AutoManagePolicy.DISABLED && isParentAttached() && activeRunnables.isEmpty())
-                        runCommand(Command.PAUSE);
-                } catch (ConcurrentModificationException ignore){
-                    Runnable pause = () -> runKeyedCommand(key, Command.PAUSE);
-                    if(!queuedGroupActions.contains(pause))
-                        addToQueuedGroupActions(pause);
-                }
-                break;
+                removeFromActive(key);
+                if (isParentAttached() && (autoStopPolicy == AutoManagePolicy.ALWAYS || (autoStopPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.isEmpty())))
+                    return runCommand(Command.PAUSE);
+                return true;
             }
             case NONE:
                 return true;
             default:
                 return false;
         }
-        return true;
     }
 
     protected Optional<Object> getArg(String name, Map.Entry<String, Object>... args){
@@ -282,8 +269,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         addToActive(key, runnable, args);
         if(isParentAttached() && !isRunning())
             if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
-                if(getParent().isRunning()) runCommand(Command.START, args);
-                else runCommand(Command.START, args);
+                runCommand(Command.START, args);
         return true;
     }
 
@@ -309,12 +295,12 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
     //----------IMPLEMENT Runnable----------//
     protected void runQueuedActions(){
-
+        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
     }
 
     @Override
     public void run(){
-        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
+        runQueuedActions();
         activeRunnables.forEach((k, v) -> v.run());
     }
 

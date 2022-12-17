@@ -10,7 +10,9 @@ import static org.apache.commons.lang3.StringUtils.repeat;
 public class EventManager extends KeyedBidirectionalStructure<String, EventManager, EventManager> {
     private static final EventManager instance = new EventManager(null);
     private final Hashtable<String, Hashtable<String, Runnable>> events = new Hashtable<>();
-    private static final List<Runnable> tickets = new LinkedList<>();
+    private final List<Runnable> tickets = new LinkedList<>();
+
+    public String dirChar = "/";
 
     private final String name;
 
@@ -104,8 +106,15 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     }
 
     public void triggerEvent(String event){
-        getRunnables(event).forEach(Runnable::run);
-        tickets.forEach(Runnable::run);
+        if(!event.contains(dirChar)) {
+            getRunnables(event).forEach(Runnable::run);
+            tickets.forEach(Runnable::run);
+            return;
+        }
+
+        List<String> l = Arrays.stream(event.split(dirChar)).collect(Collectors.toList());
+
+        getChild(l.remove(0)).triggerEvent(String.join(dirChar, l));
     }
 
     public void triggerEvent(Enum<?> event){
@@ -116,7 +125,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
         if(getParent() == null)
             return getName();
 
-        return getParent().getDir() + "/" + getName();
+        return getParent().getDir() + dirChar + getName();
     }
 
     public void attachChild(EventManager eventManager) {
@@ -145,11 +154,5 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     @Override
     public String toString() {
         return getInfo("","│\t");
-    }
-
-    public enum CommonEvent{
-        START,
-        INIT,
-        STOP
     }
 }

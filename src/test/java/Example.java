@@ -1,8 +1,11 @@
 import om.self.task.core.*;
+import om.self.task.other.IncrementedTask;
 import om.self.task.other.TimedTask;
 
-import java.util.AbstractMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Example {
     public static void main(String[] args) {
@@ -40,6 +43,7 @@ public class Example {
 //
 //        System.out.println(g1.getInfo("│\t", 0));
 
+
 //        EventManager em1 = new EventManager("m1");
 //        em1.attachToEvent("e1", "r1", () -> {});
 //        em1.attachToEvent("e1", "r2", () -> {});
@@ -63,44 +67,71 @@ public class Example {
 //        EventManager em5 = new EventManager("m5", em2);
 //        em5.attachToEvent("e1", "r1", () -> {});
 //        em5.attachToEvent("e1", "r2", () -> {});
-//        em5.attachToEvent("e2", "r1", () -> {});
+//        em5.attachToEvent("e2", "r1", () -> System.out.println("e2 in e5 triggered"));
 //
 //        System.out.println(em1);
+//
+//        em1.triggerEvent("m2/m5/e2");
 
 
-        Group main = new Group("main");
-        GroupEx sub = new GroupEx("sub", main);
-        new Task("test", sub).setRunnable(() -> System.out.println("hello from sub"));
+//        Group main = new Group("main");
+//        GroupEx sub = new GroupEx("sub", main);
+//        new Task("test", sub).setRunnable(() -> System.out.println("hello from sub"));
+//
+//
+//        TaskEx t = new TaskEx("test", main);
+//        EventManager em = new EventManager("main");
+//
+//        sub.waitForEvent("trigger", em);//, () -> System.out.println("sub parked"));
+//
+//
+//        t.addStep(() -> System.out.println("pre event"));
+//        t.waitForEvent("trigger", em);
+//        t.addStep(() -> System.out.println("waiting..."));
+//        t.waitForEvent("trigger", em, () -> System.out.println("waiting"));
+//        t.addStep(() -> System.out.println("post event"));
+//
+//        System.out.println(main);
+//        main.run();
+//        main.run();
+//        System.out.println(em);
+//        main.run();
+//        System.out.println(main);
+//
+//        while(!main.isDone()){
+//            main.run();
+//            if(Math.random() < 0.05)
+//            {
+//                System.out.println(em);
+//                em.triggerEvent("trigger");
+//                main.run();
+//                break;
+//            }
+//        }
 
 
-        TaskEx t = new TaskEx("test", main);
-        EventManager em = new EventManager("main");
+//        Group g = new OrderedGroup("main");
+//        Task t = new Task("test", g);
+//        t.setRunnable(() -> System.out.println("hello!"));
+//        IncrementedTask it = new IncrementedTask("it", g);
+//        it.addIncrementedStep(() -> System.out.println("waiting"), 10);
+//        it.addStep(() -> g.runKeyedCommand("test", Group.Command.PAUSE));
+//        it.addIncrementedStep(() -> System.out.println("paused"), 10);
+//
+//        while (!g.isDone())
+//            g.run();
 
-        sub.waitForEvent("trigger", em);//, () -> System.out.println("sub parked"));
+        CopyOnWriteArrayList<Runnable> test = new CopyOnWriteArrayList<>();
 
+        test.add(() -> System.out.println("first"));
+        test.add(() -> test.remove(0));
+        test.add(() -> System.out.println("second"));
+        test.add(() -> System.out.println("second2"));
 
-        t.addStep(() -> System.out.println("pre event"));
-        t.waitForEvent("trigger", em);
-        t.addStep(() -> System.out.println("waiting..."));
-        t.waitForEvent("trigger", em, () -> System.out.println("waiting"));
-        t.addStep(() -> System.out.println("post event"));
+        for(Runnable r : test)
+            r.run();
 
-        System.out.println(main);
-        main.run();
-        main.run();
-        System.out.println(em);
-        main.run();
-        System.out.println(main);
-
-        while(!main.isDone()){
-            main.run();
-            if(Math.random() < 0.05)
-            {
-                System.out.println(em);
-                em.triggerEvent("trigger");
-                main.run();
-                break;
-            }
-        }
+        for(Runnable r : test)
+            r.run();
     }
 }
