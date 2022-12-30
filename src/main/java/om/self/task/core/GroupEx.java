@@ -1,5 +1,7 @@
 package om.self.task.core;
 
+import om.self.task.event.EventManager;
+
 public class GroupEx extends Group{
     private Runnable runFunction = getBaseRunFunction();
 

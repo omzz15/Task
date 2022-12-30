@@ -2,6 +2,7 @@ package om.self.task.core;
 
 import om.self.structure.NamedStructure;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
+import om.self.task.event.EventManager;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

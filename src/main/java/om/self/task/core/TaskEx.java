@@ -1,5 +1,8 @@
 package om.self.task.core;
 
+import om.self.task.event.EventContainer;
+import om.self.task.event.EventManager;
+
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
@@ -142,6 +145,10 @@ public class TaskEx extends Task {
         addStep(step, step::isDone);
     }
 
+    public void addStep(Group step) {
+        addStep(step, step::isDone);
+    }
+
     /**
      * 1
      *
@@ -160,14 +167,47 @@ public class TaskEx extends Task {
         }
     }
 
-    public void waitForEvent(String event, EventManager manager){
+    public void addConcurrentSteps(Runnable... steps){
+        Group g = new Group("concurrent steps");
+        for(int i = 0; i < steps.length; i++){
+            g.attachChild("concurrent " + i, steps[i]);
+        }
+        addStep(g);
+    }
+
+    /**
+     * This will wait for any of the events to complete then remove everything
+     * @param event the event that should trigger this task
+     */
+    public void waitForEvent(EventContainer event){
         addStep(() -> {
             getParent().setWaiting(true);
-            manager.singleTimeAttachToEvent(event, "start task - " + getName(), () -> {
+            event.manager.singleTimeAttachToEvent(event.event, "start task - " + getName(), () -> {
                 getParent().setWaiting(false);
                 runCommand(Group.Command.START);
             });
             runCommand(Group.Command.PAUSE);
+        });
+    }
+
+    /**
+     * This will wait for any of the events to complete then remove everything and continue
+     * @param events the events that should trigger this task
+     */
+    public void waitForEvents(EventContainer... events){
+        addStep(() -> {
+            getParent().setWaiting(true);
+            for(EventContainer event : events)
+                event.manager.attachToEvent(event.event, "start task - " + getName(), () -> {
+                    getParent().setWaiting(false);
+                    runCommand(Group.Command.START);
+                });
+            runCommand(Group.Command.PAUSE);
+        });
+
+        addStep(() -> {
+            for(EventContainer event : events)
+                event.manager.detachFromEvent(event.event, "start task - " + getName());
         });
     }
 

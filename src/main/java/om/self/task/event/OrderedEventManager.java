@@ -1,4 +1,4 @@
-package om.self.task.core;
+package om.self.task.event;
 
 import java.util.*;
 

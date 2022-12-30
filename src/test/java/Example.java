@@ -1,7 +1,11 @@
 import om.self.task.core.*;
+import om.self.task.event.EventContainer;
+import om.self.task.event.EventManager;
+import om.self.task.event.WaitForAllEvents;
 import om.self.task.other.IncrementedTask;
 import om.self.task.other.TimedTask;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -121,17 +125,61 @@ public class Example {
 //        while (!g.isDone())
 //            g.run();
 
-        CopyOnWriteArrayList<Runnable> test = new CopyOnWriteArrayList<>();
+//        CopyOnWriteArrayList<Runnable> test = new CopyOnWriteArrayList<>();
+//
+//        test.add(() -> System.out.println("first"));
+//        test.add(() -> test.remove(0));
+//        test.add(() -> System.out.println("second"));
+//        test.add(() -> System.out.println("second2"));
+//
+//        for(Runnable r : test)
+//            r.run();
+//
+//        for(Runnable r : test)
+//            r.run();
 
-        test.add(() -> System.out.println("first"));
-        test.add(() -> test.remove(0));
-        test.add(() -> System.out.println("second"));
-        test.add(() -> System.out.println("second2"));
+//        TimedTask test = new TimedTask("test");
+//
+//        test.addStep(() -> System.out.println("hello 1"));
+//        test.addStep(() -> System.out.println("hello 2"));
+//        test.addDelay(1000);
+//        test.addStep(() -> System.out.println("hello 3"));
+//
+//        while (!test.isDone()){
+//            test.run();
+//        }
+//
+//        System.out.println("complete");
 
-        for(Runnable r : test)
-            r.run();
 
-        for(Runnable r : test)
-            r.run();
+        EventManager em = new EventManager("main");
+        //EventContainer ec = new EventContainer(em, "t3");
+        WaitForAllEvents test = new WaitForAllEvents("test", new EventContainer(em, "out"), new EventContainer(em, "t1"),new EventContainer(em, "t2"), new EventContainer(em, "t3"));
+
+        em.attachToEvent("out", "print", () -> System.out.println("all triggered"));
+
+        System.out.println(em);
+
+        em.triggerEvent("t1");
+        em.triggerEvent("t2");
+        //em.triggerEvent("t3");
+        test.detachEvents(new EventContainer(em, "t3"));
+
+        Group g = new Group("1");
+        IncrementedTask t = new IncrementedTask("2");
+        IncrementedTask t2 = new IncrementedTask("3");
+
+        TaskEx tx = new TaskEx("test", g);
+
+        tx.addStep(() -> System.out.println("hello 1"));
+        tx.addConcurrentSteps(t, t2);
+        tx.addStep(() -> System.out.println("hello 2"));
+
+        t.addIncrementedStep(() -> System.out.println(t.getI()), 10);
+        t2.addIncrementedStep(() -> System.out.println(t2.getI()), 100);
+
+        while (!g.isDone()){
+            g.run();
+        }
     }
 }
