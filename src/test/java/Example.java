@@ -152,34 +152,74 @@ public class Example {
 //        System.out.println("complete");
 
 
+//        EventManager em = new EventManager("main");
+//        //EventContainer ec = new EventContainer(em, "t3");
+//        WaitForAllEvents test = new WaitForAllEvents("test", new EventContainer(em, "out"), new EventContainer(em, "t1"),new EventContainer(em, "t2"), new EventContainer(em, "t3"));
+//
+//        em.attachToEvent("out", "print", () -> System.out.println("all triggered"));
+//
+//        System.out.println(em);
+//
+//        em.triggerEvent("t1");
+//        em.triggerEvent("t2");
+//        //em.triggerEvent("t3");
+//        test.detachEvents(new EventContainer(em, "t3"));
+//
+//        Group g = new Group("1");
+//        IncrementedTask t = new IncrementedTask("2");
+//        IncrementedTask t2 = new IncrementedTask("3");
+
+
         EventManager em = new EventManager("main");
-        //EventContainer ec = new EventContainer(em, "t3");
-        WaitForAllEvents test = new WaitForAllEvents("test", new EventContainer(em, "out"), new EventContainer(em, "t1"),new EventContainer(em, "t2"), new EventContainer(em, "t3"));
-
-        em.attachToEvent("out", "print", () -> System.out.println("all triggered"));
-
-        System.out.println(em);
-
-        em.triggerEvent("t1");
-        em.triggerEvent("t2");
-        //em.triggerEvent("t3");
-        test.detachEvents(new EventContainer(em, "t3"));
-
-        Group g = new Group("1");
-        IncrementedTask t = new IncrementedTask("2");
-        IncrementedTask t2 = new IncrementedTask("3");
-
+        Group g = new Group("main");
         TaskEx tx = new TaskEx("test", g);
 
-        tx.addStep(() -> System.out.println("hello 1"));
-        tx.addConcurrentSteps(t, t2);
-        tx.addStep(() -> System.out.println("hello 2"));
+        tx.addStep(() -> System.out.println("waiting..."));
+        tx.waitForEvent(em.getContainer("wait"));
+        tx.addStep(() -> System.out.println("done waiting!"));
+        tx.addStep(() -> System.out.println("done waiting! 2"));
 
-        t.addIncrementedStep(() -> System.out.println(t.getI()), 10);
-        t2.addIncrementedStep(() -> System.out.println(t2.getI()), 100);
+//        for(int i = 0; i < 30; i++){
+//            g.run();
+//            if(i == 1)
+//                tx.runCommand(Group.Command.PAUSE);
+//            if(i == 20)
+//                tx.runCommand(Group.Command.START);
+//            System.out.println(i);
+//        }
 
+        int loops = 0;
         while (!g.isDone()){
             g.run();
+            System.out.println(loops);
+            if(loops > 10)
+                em.triggerEvent("wait");
+            loops++;
         }
+//
+//        System.out.println(loops);
+
+//        Group main = new Group("main");
+//        TimedTask killer = new TimedTask("killer", main);
+//        TaskEx tx = new TaskEx("test", main);
+//
+//        tx.addStep(() -> {
+//            System.out.println("hello 1");
+//            tx.addNextStep(() -> System.out.println("hello 1.5"), () -> true);
+//        });
+//
+//        tx.addStep(() -> System.out.println("hello 2"));
+//
+//        killer.addDelay(1000);
+//        killer.addStep(() -> tx.runCommand(Group.Command.PAUSE));
+//        //killer.addStep(() -> System.out.println("killed!"));
+//
+//        long start = System.currentTimeMillis();
+//
+//        while (!main.isDone()){
+//            main.run();
+//        }
+//
+//        System.out.println("time: " + (System.currentTimeMillis() - start));
     }
 }

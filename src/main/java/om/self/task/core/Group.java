@@ -220,6 +220,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return 1
      */
     public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
+        if(getChild(key) instanceof  Task && ((Task)getChild(key)).lockState) return false;
         switch (command){
             case START: {
                 if (activeRunnables.size() == maxActiveRunnables) {

@@ -64,6 +64,11 @@ public class TimedTask extends TaskEx {
         addStep(() -> (System.currentTimeMillis() - startTime >= delay));
     }
 
+    public void addConditionalDelay(int delay, Supplier<Boolean> keepDelaying) {
+        addStep(() -> {startTime = System.currentTimeMillis();});
+        addStep(() -> (System.currentTimeMillis() - startTime >= delay || !keepDelaying.get()));
+    }
+
     /**
      * 1
      * @return 1

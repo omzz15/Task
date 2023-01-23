@@ -33,6 +33,11 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 */
 	public boolean autoPause = false;
 
+	/**
+	 * this prevents someone from changing the current runnable and the state(whether it is running)
+	 */
+	public boolean lockState = false;
+
 	//----------CONSTRUCTORS----------//
 	/**
 	 * Constructor that sets the name of this task and attaches it to a parent Group with the key parentKey
@@ -85,7 +90,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	@Override
 	public void setName(String name) {
 		if(name == null) throw new IllegalArgumentException("name can not be null!");
-		this.name = name;
+		this.name = name; //TODO add auto update option for parent if name changed
 	}
 
 	/**
@@ -93,7 +98,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @param runnable the runnable action you want to run
 	 */
 	public void setRunnable(Runnable runnable){
-		if(runnable == null) return;
+		if(lockState || runnable == null) return;
 
 		this.runnable = runnable;
 		if(isParentAttached() && !isRunning() && autoStart)

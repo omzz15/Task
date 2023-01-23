@@ -24,6 +24,8 @@ public class TaskEx extends Task {
      */
     public boolean autoReset = false;
 
+    private boolean waiting = false;
+
 
     //----------CONSTRUCTORS----------//
     /**
@@ -88,6 +90,9 @@ public class TaskEx extends Task {
         super.setRunnable(steps.get(curr));
         end = ends.get(curr);
         currentStep = curr;
+
+        if(waiting)
+            runCommand(Group.Command.PAUSE);
     }
 
     /**
@@ -167,6 +172,10 @@ public class TaskEx extends Task {
         }
     }
 
+    public void addNextStep(Runnable step, Supplier<Boolean> end){
+        addStep(step, end, getCurrentStep() + 1);
+    }
+
     public void addConcurrentSteps(Runnable... steps){
         Group g = new Group("concurrent steps");
         for(int i = 0; i < steps.length; i++){
@@ -182,9 +191,12 @@ public class TaskEx extends Task {
     public void waitForEvent(EventContainer event){
         addStep(() -> {
             getParent().setWaiting(true);
+            waiting = true;
             event.manager.singleTimeAttachToEvent(event.event, "start task - " + getName(), () -> {
                 getParent().setWaiting(false);
+                waiting = false;
                 runCommand(Group.Command.START);
+                System.out.println("event triggered");
             });
             runCommand(Group.Command.PAUSE);
         });
