@@ -1,218 +1,248 @@
 package om.self.task.core;
 
+import om.self.structure.NamedStructure;
+import om.self.structure.parent.KeyedParentStructureImpl;
+
 import java.util.LinkedList;
 
-public abstract class Task {
-    //logging tasks
-    private static LinkedList<Task> allTasks = new LinkedList<>();
-    private static boolean logTasks = false;
+/**
+ * A simple task that will execute a Lambda Function with no input or output.
+ * Ways to run are using the run() method or attaching to a TaskRunner.
+ */
+public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
+	private static final LinkedList<Task> allTasks = new LinkedList<>();
+	/**
+	 * 1
+	 */
+	public static boolean logTasks = false;
 
-    //task info
-    private String name;
-    private TaskRunner taskRunner;
-    /**
-     * the name used to identify this task in a TaskRunner if it is attached
-     */
-    private String containerName;
-    /**
-     * what this task actually executes
-     */
-    private Runnable step;
+	private String name;
 
-    /**
-     * Construtor that sets the name of this task, attaches it to taskRunner with the containerName paramater, and exicutes action once it is attached
-     * @param name the name of this task
-     * @param taskRunner the TaskRunner you want to attach this task to
-     * @param containerName the name used to refrence this task in the TaskRunner
-     * @param action the action to run once this task has been attached to the TaskRunner
-     */
-    public Task(String name, TaskRunner taskRunner, String containerName, TaskRunner.Action action){
-        construct(name, taskRunner, containerName, action);
-    }
+	/**
+	 * the Runnable thing that you want contained inside this task
+	 */
+	private Runnable runnable;
 
-    /**
-     * Constructor that sets the name of this task and attaches it to taskRunner with the name paramater
-     * @param name the name of this task
-     * @param taskRunner the TaskRunner you want to attach this task to (containerName will equal name)
-     */
-    public Task(String name, TaskRunner taskRunner){
-        construct(name, taskRunner, name, TaskRunner.Action.NONE);
-    }
+	/**
+	 * if this task will automatically start(put in active runnables) when attached to a group
+	 */
+	public boolean autoStart = true;
+	/**
+	 * if this task will automatically stop(remove from active runnables) when runnable is run once
+	 */
+	public boolean autoPause = false;
 
-    /**
-     * Constructor that just sets the name of this task. To run wihtout TaskRunner use the run() method
-     * @param name the name of this task
-     */
-    public Task(String name){
-        construct(name, null, null, null);
-    }
+	//----------CONSTRUCTORS----------//
+	/**
+	 * Constructor that sets the name of this task and attaches it to a parent Group with the key parentKey
+	 * @param name the name of this task
+	 * @param parentKey the name used to reference this task in the parent group (not used if the parent parameter is null)
+	 * @param parent the Group you want to attach this task to (if null then it won't have a parent)
+	 */
+	public Task(String name, String parentKey, Group parent){
+		construct(name, parentKey, parent);
+	}
 
-    /**
-     * the method called by constructors to initilize variables and optionally set taskRunner
-     * @param name the name of this task
-     * @param taskRunner the TaskRunner you want to attach this task to (if null then it wont attach to a taskRunner)
-     * @param containerName the name used to refrence this task in the TaskRunner (not used if taskRunner is null)
-     * @param action the action to run once this task has been attached to the TaskRunner (not used if taskRunner is null)
-     */
-    private void construct(String name, TaskRunner taskRunner, String containerName, TaskRunner.Action action){
-        setName(name);
-        if(taskRunner != null)
-            taskRunner.addTask(containerName, this, action);
-        if(logTasks) allTasks.add(this);
-    }
+	/**
+	 * Constructor that sets the name of this task and attaches it to a Group with the key being the same as the name
+	 * @param name the name of this task
+	 * @param parent the Group you want to attach this task to (parentKey will equal name)
+	 */
+	public Task(String name, Group parent){
+		construct(name, name, parent);
+	}
 
-    /**
-     * sets the name of this task - setter for variable name
-     * @param name the name you want to set this task to
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
+	/**
+	 * Constructor that just sets the name of this task.
+	 * @param name the name of this task
+	 */
+	public Task(String name){
+		construct(name, null, null);
+	}
 
-    /**
-     * gets the name of this task - getter for variable name
-     */
-    public String getName() {
-        return name;
-    }
+	/**
+	 * the method called by constructors to initialize variables and optionally set parent group
+	 * @param name the name of this task
+	 * @param parentKey the name used to reference this task in the parent group (not used if the parent parameter is null)
+	 * @param parent the Group you want to attach this task to (if null then it won't have a parent)
+	 */
+	protected void construct(String name, String parentKey, Group parent){
+		setName(name);
+		if(parent != null)
+			attachParent(parentKey, parent);
 
-    /**
-     * attaches this task to a TaskRunner with a specific name
-     * @param taskRunner the TaskRunner you want to attach this task to
-     * @param containerName the name used to refrence this task in the TaskRunner
-     */
-    public void attachTaskRunner(TaskRunner taskRunner, String containerName){
-        this.taskRunner = taskRunner;
-        this.containerName = containerName;
-        taskRunner.addTaskRaw(containerName, this);
-    }
-
-    /**
-     * attaches this task to taskRunner using this task's name
-     * @param taskRunner the task runner to attach this task to
-     */
-    public void attachTaskRunner(TaskRunner taskRunner){
-        attachTaskRunner(taskRunner, getName());
-    }
-
-    /**
-     * removes the attached taskRunner from this task and deletes all refrences to this task in taskRunner
-     * @throws NullPointerException if taskRunner has not been attached
-     */
-    public void removeTaskRunner(){
-        taskRunner.runAction(containerName, TaskRunner.Action.REMOVE_FROM_QUE);
-        taskRunner.runAction(containerName, TaskRunner.Action.PAUSE);
-        taskRunner.removeTaskRaw(containerName);
-        this.taskRunner = null;
-        this.containerName = null;
-    }
-
-    /**
-     * get the current attached taskRunner (returns null if no taskRunner is attached) - getter method for variable taskRunner
-     * @return the variable taskRunner
-     */
-    public TaskRunner getTaskRunner(){
-        return taskRunner;
-    }
-
-    /**
-     * checks if a taskRunner is currently attached to this task
-     * @return if a taksRunner is attached
-     */
-    public boolean isTaskRunnerAttached(){
-        return taskRunner != null;
-    }
-
-    /**
-     * sets the step (the function that is run by taskRunner or run()) - setter method for variable step
-     * @param step the step you want to run
-     */
-    public void setStep(Runnable step){
-        this.step = step;
-    }
-
-    /**
-     * gets the step (the function that is run by taskRunner or run()) that is currently set - getter method for variable step
-     * @return the currently set step
-     */
-    public Runnable getStep(){
-        return step;
-    }
-
-    /**
-     * gets the containerName ()
-     * @return
-     */
-    public String getContainerName(){
-        return containerName;
-    }
-
-    public void start(){
-        if(isTaskRunnerAttached())
-            taskRunner.addTaskToActiveTasks(containerName, this);
-    }
-
-    public void pause(){
-        if(isTaskRunnerAttached())
-            taskRunner.removeTaskFromActiveTasks(containerName);
-    }
-
-    public void quePause(){
-        taskRunner.quePause(containerName);
-    }
-
-    public void reset(){}
-
-    public void restart(){}
-
-    /**
-     * runs the task without checking if it is running (only use with TaskRunner)
-     */
-    void runRaw(){
-        try{
-            step.run();
-        }catch(NullPointerException e){
-            System.out.println("Warning null pointer exception thrown by " + this + ". Make sure to set the step!");
-        }
-    }
-
-    /**
-     * runs the task if it is running
-     */
-    public void run(){
-        runRaw();
-    }
-
-    public String getStatusString(String tab, int startTabs){
-        String start = "";
-        for(int i = 0; i < startTabs; i++){
-            start += tab;
-        }
-        return start + name + " as " + getClass() + ":\n" +
-                start + tab +  "Running: " + running;
-    }
+		if(logTasks) allTasks.add(this);
+	}
 
 
-    public void printStatusString(){
-        System.out.println(getStatusString("\t", 0));
-    }
+	//----------GETTER AND SETTER----------//
+	@Override
+	public String getName() {
+		return name;
+	}
 
-    public static void setTaskLogging(boolean value){
-        logTasks = value;
-    }
+	@Override
+	public void setName(String name) {
+		if(name == null) throw new IllegalArgumentException("name can not be null!");
+		this.name = name;
+	}
 
-    public static LinkedList<Task> getAllTasks(){
-        //if(!logTasks)
-        //Logger.addMessage("while calling Task.getAllTasks(): Task Logging was disabled so tasks may not be stored. \nTo enable task logging call Task.setTaskLogging(true) before making tasks.", Message.Type.WARNING);
-        return allTasks;
-    }
+	/**
+	 * sets the runnable action (the function that is run by taskRunner or run())
+	 * @param runnable the runnable action you want to run
+	 */
+	public void setRunnable(Runnable runnable){
+		if(runnable == null) return;
 
-    public static Task getTaskWithName(String name){
-        if(!logTasks)
-            System.out.println("WARNING while calling Task.getTaskWithName(): Task Logging was disabled so tasks may not be stored. \nTo enable task logging call Task.setTaskLogging(true) before making tasks.");
-        for(Task t : allTasks)
-            if(t.getName().equals(name))
-                return t;
-        return null;
-    }
+		this.runnable = runnable;
+		if(isParentAttached() && !isRunning() && autoStart)
+			runCommand(Group.Command.START);
+	}
+
+	/**
+	 * gets the runnable action (the thing that is run by taskRunner or manually with {@link Task#run()})
+	 * @return the currently set runnable action
+	 */
+	public Runnable getRunnable() {
+		return runnable;
+	}
+
+
+	//----------CHECKS----------//
+	/**
+	 * 1
+	 * @return 1
+	 */
+	public boolean isRunning(){
+		return isParentAttached() && getParent().isChildRunning(getParentKey());
+	}
+
+	/**
+	 * 1
+	 * @return 1
+	 */
+	public boolean isDone(){
+		return !isRunning();
+	}
+
+
+	//----------IMPLEMENT KeyedParentStructure----------//
+	@Override
+	public void attachParent(String key, Group parent) {
+		super.attachParent(key, parent);
+		parent.attachChild(key, this);
+	}
+
+	/**
+	 * 1
+	 * @param parent 1
+	 */
+	public void attachParent(Group parent){
+		attachParent(name, parent);
+	}
+
+	@Override
+	public void detachParent() {
+		if(!isParentAttached()) return;
+
+		getParent().detachChild(getParentKey());
+		super.detachParent();
+	}
+
+
+	//----------IMPLEMENT Runnable----------//
+	/**
+	 * runs the action
+	 */
+	@Override
+	public void run(){
+		runnable.run();
+		if(isRunning() && autoPause)
+			runCommand(Group.Command.QUE_PAUSE);
+	}
+
+
+	//----------Command----------//
+
+	/**
+	 * 1
+	 * @param command 1
+	 * @param args 1
+	 * @return 1
+	 */
+	public boolean runCommand(Group.Command command, Object... args) {
+		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
+		return false;
+	}
+
+
+	//----------INFO----------//
+
+	/**
+	 * 1
+	 * @param tab 1
+	 * @param start 1
+	 * @return 1
+	 */
+	protected StringBuilder getBaseInfo(String tab, String start){
+		StringBuilder str = new StringBuilder(start);
+		str.append(getName() + " Info:");
+		str.append("\n");
+		str.append(start + tab + "Type: " + getClass().getSimpleName());
+		str.append("\n");
+		str.append(start + tab + "Status: ");
+		if(!isParentAttached())
+			str.append("No Parent");
+		else if (isRunning())
+			str.append("Running");
+		else
+			str.append("Not Running");
+		return str;
+	}
+
+	/**
+	 * 1
+	 * @param tab 1
+	 * @param startTabs 1
+	 * @param extend 1
+	 * @return 1
+	 */
+	public String getInfo(String tab, int startTabs, boolean extend){
+		String start = tab.repeat(startTabs);
+		StringBuilder str = getBaseInfo(tab, start);
+		if(extend){
+			str.append("\n");
+			str.append(start + tab +  "Auto Start: " + autoStart);
+			str.append("\n");
+			str.append(start + tab +  "Auto Pause: " + autoPause);
+		}
+		return str.toString();
+	}
+
+	@Override
+	public String toString(){
+		return getInfo("\t", 0, false);
+	}
+
+
+	//----------STATIC METHODS----------//
+	/**
+	 * 1
+	 * @return 1
+	 */
+	public static LinkedList<Task> getAllTasks(){
+		return allTasks;
+	}
+
+	/**
+	 * 1
+	 * @param name 1
+	 * @return 1
+	 */
+	public static Task getTaskWithName(String name){
+		for(Task t : allTasks)
+			if(t.getName().equals(name))
+				return t;
+		return null;
+	}
 }

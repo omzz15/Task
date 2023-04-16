@@ -1,60 +1,44 @@
-import om.self.logger.Logger;
+import om.self.task.core.EventManager;
 
-public class Example{
-    public static void main(String[] args) throws Exception{
+import java.util.LinkedList;
+import java.util.List;
 
-        Logger.getInstance().setFile("epic.gireod", true);
-        //Logger.getInstance().makeFile(false, false);
+public class Example {
+    public static void main(String[] args) {
+        EventManager em1 = new EventManager("main");
+        em1.attachToEvent(EventManager.CommonTrigger.START, "main start", () -> System.out.println("main started"));
 
-//        TaskRunner tr = new TaskRunner("runner 1");
-//        int tasks = 300;
-//        int maxTime = 300;
-//        int maxCycles = 300;
+        EventManager em2 = new EventManager("robot", em1);
+        em2.attachToEvent(EventManager.CommonTrigger.START, "robot start", () -> System.out.println("robot started"));
+
+        EventManager em3 = new EventManager("drive", em2);
+        em3.attachToEvent(EventManager.CommonTrigger.START, "drive start", () -> System.out.println("drive started"));
+
+        System.out.println(em3.getDir());
+
+
+//        Group g1 = new Group("g");
+//        g1.setMaxActiveRunnables(1);
 //
+//        IncrementedTask t = new IncrementedTask("t", g1);
+//        t.addIncrementedStep(() -> System.out.println("test " + t.getI()), 10);
 //
-//        for(int i = 0; i < tasks; i++){
-//            TimedTask timer = new TimedTask("Timer " + i);
-//            timer.addTimedStep(() -> {
-//                //System.out.println(timer.getName() + " with runtime: " + timer.getCurrentRunTime());
-//            }, (int)(Math.random() * maxTime));
+//        IncrementedTask t2 = new IncrementedTask("t2");
+//        t2.autoStart = false;
+//        t2.attachParent(g1);
+//        t2.addIncrementedStep(() -> System.out.println("2 test " + t2.getI()), 10);
 //
-//            if(Math.random() <= 0.5)
-//                tr.addTask(timer, TaskRunner.Action.ADD_TO_QUE);
-//            else
-//                tr.addTask(timer, TaskRunner.Action.START);
+//        System.out.println(g1);
+//
+//        for (int i = 0; i < 5; i++) {
+//            g1.run();
 //        }
 //
-//        for(int i = 0; i < tasks; i++){
-//            IncrementedTask it = new IncrementedTask("Inctirment " + i);
-//            it.addIncrementedStep(() -> {
-//                //System.out.println(it.getName() + " with i: " + it.getI());
-//            }, (int)(Math.random() * maxCycles));
+//        System.out.println(g1.runKeyedCommand("t2", Group.Command.START, true));
 //
-//            if(Math.random() <= 0.5)
-//                tr.addTask(it, TaskRunner.Action.ADD_TO_QUE);
-//            else
-//                tr.addTask(it, TaskRunner.Action.START);
-//        }
+//        while (!g1.isDone())
+//            g1.run();
 //
-//        tr.setDefaultTask((Task)null);
-//
-//        System.out.println(tr.getStatusString("   ", 0));
-//
-//        long start = System.currentTimeMillis();
-//        int clock = 0;
-//
-//        tr.start();
-//
-//        //while(!tr.isDone(true)){
-//            tr.run();
-//            clock++;
-//        //}
-//
-//
-//        int time = (int)(System.currentTimeMillis() - start);
-//
-//        System.out.println("Time - " + time);
-//        System.out.println("Cycles - " + clock);
-//        System.out.println("Time Per Cycle - " + (double)time/(double)clock);
+//        System.out.println(g1);
     }
 }
