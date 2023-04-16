@@ -4,6 +4,9 @@ import om.self.structure.NamedStructure;
 import om.self.structure.parent.KeyedParentStructureImpl;
 
 import java.util.LinkedList;
+import java.util.Map;
+
+import static org.apache.commons.lang3.StringUtils.repeat;
 
 /**
  * A simple task that will execute a Lambda Function with no input or output.
@@ -11,10 +14,8 @@ import java.util.LinkedList;
  */
 public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
 	private static final LinkedList<Task> allTasks = new LinkedList<>();
-	/**
-	 * 1
-	 */
 	public static boolean logTasks = false;
+
 
 	private String name;
 
@@ -31,6 +32,11 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * if this task will automatically stop(remove from active runnables) when runnable is run once
 	 */
 	public boolean autoPause = false;
+
+	/**
+	 * this prevents someone from changing the current runnable and the state(whether it is running)
+	 */
+	public boolean lockState = false;
 
 	//----------CONSTRUCTORS----------//
 	/**
@@ -84,7 +90,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	@Override
 	public void setName(String name) {
 		if(name == null) throw new IllegalArgumentException("name can not be null!");
-		this.name = name;
+		this.name = name; //TODO add auto update option for parent if name changed
 	}
 
 	/**
@@ -92,7 +98,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @param runnable the runnable action you want to run
 	 */
 	public void setRunnable(Runnable runnable){
-		if(runnable == null) return;
+		if(lockState || runnable == null) return;
 
 		this.runnable = runnable;
 		if(isParentAttached() && !isRunning() && autoStart)
@@ -158,7 +164,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	public void run(){
 		runnable.run();
 		if(isRunning() && autoPause)
-			runCommand(Group.Command.QUE_PAUSE);
+			runCommand(Group.Command.PAUSE);
 	}
 
 
@@ -170,8 +176,8 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @param args 1
 	 * @return 1
 	 */
-	public boolean runCommand(Group.Command command, Object... args) {
-		if(isParentAttached()) getParent().runKeyedCommand(getParentKey(), command, args);
+	public boolean runCommand(Group.Command command, Map.Entry<String, Object>... args) {
+		if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
 		return false;
 	}
 
@@ -208,7 +214,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @return 1
 	 */
 	public String getInfo(String tab, int startTabs, boolean extend){
-		String start = tab.repeat(startTabs);
+		String start = repeat(tab, startTabs);
 		StringBuilder str = getBaseInfo(tab, start);
 		if(extend){
 			str.append("\n");

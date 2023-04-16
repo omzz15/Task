@@ -2,22 +2,33 @@ package om.self.task.core;
 
 import om.self.structure.NamedStructure;
 import om.self.structure.bidirectional.KeyedBidirectionalStructure;
-import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.Map;
+import om.self.task.event.EventManager;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+
+import static org.apache.commons.lang3.StringUtils.repeat;
 
 /**
  * A structure class that can manage and run {@link Runnable} like {@link Task}.
  */
 public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> implements Runnable, NamedStructure<String>{
+    public static final class CommandVars{
+        public static final String forceActiveRunnable = "force active runnable";
+        public static final String location = "location";
+        public static final String allowMultiRun = "allow multi run";
+    }
+
     private String name;
-    private final Hashtable<String, Runnable> activeRunnables = new Hashtable<>();
-    private final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
+    protected final ConcurrentHashMap<String, Runnable> activeRunnables = new ConcurrentHashMap<>();
+    protected final LinkedList<Runnable> queuedGroupActions = new LinkedList<>();
 
     /**
      * Whether this group should automatically be paused and started based on if there are any active runnables
      */
-    public boolean autoManage = true;
+    public AutoManagePolicy autoStartPolicy = AutoManagePolicy.ONLY_WHEN_EMPTY;
+    public AutoManagePolicy autoStopPolicy = AutoManagePolicy.ONLY_WHEN_EMPTY;
 
     /**
      * the number of maximum active runnables at a time(-1 means infinity)
@@ -29,6 +40,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      */
     public boolean forceActiveRunnablesDefault = false;
 
+    private boolean waiting = false;
 
     //----------CONSTRUCTOR----------//
     /**
@@ -80,9 +92,9 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     /**
      * gets all active(running) runnables
      * @return {@link Group#activeRunnables}
-     * @apiNote DO NOT use this to add or remove from the active runnables. Use {@link Group#runKeyedCommand(String, Command, Object...)} because there are checks that need to be run.
+     * @apiNote DO NOT use this to add or remove from the active runnables. Use {@link Group#runKeyedCommand(String, Command, Map.Entry[])} because there are checks that need to be run.
      */
-    public Hashtable<String, Runnable> getActiveRunnables() {
+    public ConcurrentHashMap<String, Runnable> getActiveRunnables() {
         return activeRunnables;
     }
 
@@ -128,6 +140,23 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         this.maxActiveRunnables = maxActiveRunnables;
     }
 
+    public boolean isWaiting() {
+        return waiting;
+    }
+
+    /**
+     * a flag that tells this that it is still waiting for something so {@link Group#isDone()} can not be true. This will not affect auto pause so the group is free to pause if there are no other active runnable
+     * @param waiting if this group is waiting for something
+     */
+    public void setWaiting(boolean waiting) {
+        setWaiting(waiting, true);
+    }
+
+    public void setWaiting(boolean waiting, boolean propagate) {
+        this.waiting = waiting;
+        if(isParentAttached() && propagate)
+            getParent().setWaiting(waiting);
+    }
 
     //----------CHECKS----------//
     /**
@@ -143,7 +172,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return 1
      */
     public boolean isDone(){
-        return activeRunnables.isEmpty() && queuedGroupActions.isEmpty();
+        return activeRunnables.isEmpty() && queuedGroupActions.isEmpty() && !waiting;
     }
 
     /**
@@ -159,7 +188,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     //----------IMPLEMENT Structure methods----------//
     @Override
     public void onChildDetach(String key, Runnable child) {
-        activeRunnables.remove(key);
+        removeFromActive(key);
+    }
+
+    public void clear(){
+        for (String s: getChildKeys()) detachChild(s);
     }
 
     /**
@@ -186,54 +219,59 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param args 1
      * @return 1
      */
-    public boolean runKeyedCommand(String key, Command command, Object... args){
+    public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
+        if(getChild(key) instanceof  Task && ((Task)getChild(key)).lockState) return false;
         switch (command){
             case START: {
-                if(activeRunnables.size() == maxActiveRunnables){
-                    boolean force = forceActiveRunnablesDefault;
-                    try{
-                        force = (boolean) args[0];
-                    } catch (Exception ignore){}
+                if (activeRunnables.size() == maxActiveRunnables) {
+                    boolean force = getArg(CommandVars.forceActiveRunnable, forceActiveRunnablesDefault, args);
+                    if (!force) return false;
 
-                    if(!force) return false;
-
-                    activeRunnables.remove(activeRunnables.keys().nextElement());
+                    removeFromActive(activeRunnables.keys().nextElement());
                 }
-
-                return startRunnable(key);
+                return startRunnable(key, args);
             }
             case PAUSE: {
-                activeRunnables.remove(key);
-                if(autoManage && isParentAttached() && activeRunnables.isEmpty())
-                    runCommand(Command.QUE_PAUSE);
-                break;
-            }
-            case QUE_PAUSE: {
-                Runnable pause = () -> runKeyedCommand(key, Command.PAUSE);
-                if(!queuedGroupActions.contains(pause))
-                    addToQueuedGroupActions(pause);
-                break;
-            }
-            case QUE_START:{
-                Runnable start = () -> runKeyedCommand(key, Command.START);
-                if(!queuedGroupActions.contains(start))
-                    addToQueuedGroupActions(start);
-                break;
+                removeFromActive(key);
+                if (isParentAttached() && (autoStopPolicy == AutoManagePolicy.ALWAYS || (autoStopPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.isEmpty())))
+                    return runCommand(Command.PAUSE);
+                return true;
             }
             case NONE:
                 return true;
             default:
                 return false;
         }
-        return true;
     }
 
-    private boolean startRunnable(String key){
+    protected Optional<Object> getArg(String name, Map.Entry<String, Object>... args){
+        for (Map.Entry<String, Object> arg: args){
+            if(Objects.equals(arg.getKey(), name)) return Optional.of(arg.getValue());
+        }
+        return Optional.empty();
+    }
+
+    protected<T> T getArg(String name, T defaultVal, Map.Entry<String, Object>... args){
+        for (Map.Entry<String, Object> arg: args){
+            if(Objects.equals(arg.getKey(), name)) return (T)(arg.getValue());
+        }
+        return defaultVal;
+    }
+
+    protected void addToActive(String key, Runnable runnable, Map.Entry<String, Object>... args){
+        activeRunnables.put(key, runnable);
+    }
+    protected void removeFromActive(String key, Map.Entry<String, Object>... args){
+        activeRunnables.remove(key);
+    }
+
+    private boolean startRunnable(String key, Map.Entry<String, Object>... args){
         Runnable runnable = getChild(key);
         if(runnable == null) return false;
-        activeRunnables.put(key, runnable);
-        if(autoManage && isParentAttached() && !isRunning())
-            runCommand(Command.QUE_START);
+        addToActive(key, runnable, args);
+        if(isParentAttached() && !isRunning())
+            if(autoStartPolicy == AutoManagePolicy.ALWAYS || (autoStartPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.size() == 1))
+                runCommand(Command.START, args);
         return true;
     }
 
@@ -243,19 +281,32 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param args 1
      * @return 1
      */
-    public boolean runCommand(Command command, Object... args) {
+    public boolean runCommand(Command command, Map.Entry<String, Object>... args) {
         if(isParentAttached()) return getParent().runKeyedCommand(getParentKey(), command, args);
         return false;
     }
 
+    public void waitForEvent(String event, EventManager manager){
+        setWaiting(true);
+        manager.singleTimeAttachToEvent(event, "start group - " + getName(), () -> {
+            setWaiting(false);
+            runCommand(Group.Command.START);
+        });
+        runCommand(Command.PAUSE);
+    }
 
     //----------IMPLEMENT Runnable----------//
+    protected void runQueuedActions(){
+        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
+    }
+
     @Override
     public void run(){
-        while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
-
-        activeRunnables.forEach((k,v) -> v.run());
+        runQueuedActions();
+        activeRunnables.forEach((k, v) -> v.run());
     }
+
+
 
 
     //----------INFO----------//
@@ -266,13 +317,13 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param start 1
      * @return 1
      */
-    protected StringBuilder getBaseInfo(String tab, String start){
+    private StringBuilder getBaseInfo(String tab, String start){
         StringBuilder str = new StringBuilder(start);
-        str.append(getName() + " Info:");
-        str.append("\n");
-        str.append(start + tab + "Type: " + getClass().getSimpleName());
-        str.append("\n");
-        str.append(start + tab + "Status: ");
+        str.append(getName()).append(" Info:")
+                .append("\n")
+                .append(start).append(tab).append("Type: ").append(getClass().getSimpleName())
+                .append("\n")
+                .append(start).append(tab).append("Status: ");
         if(!isParentAttached())
             str.append("No Parent");
         else if (isRunning())
@@ -283,22 +334,24 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         return str;
     }
 
-    private String getHashtableInfo(Map<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+
+
+    private String getMapInfo(Map<String, Runnable> table, String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
         StringBuilder str = new StringBuilder();
-        String start = tab.repeat(startTabs);
+        String start = repeat(tab, startTabs);
 
         for (Map.Entry<String, Runnable> entry: table.entrySet()) {
-            str.append("\n");
-            str.append(start + tab + "Key: " + entry.getKey());
-            str.append("\n");
+            str.append("\n")
+                    .append(start).append(tab).append("Key: ").append(entry.getKey())
+            .append("\n");
 
             Runnable r = entry.getValue();
             if(r instanceof Task)
                 str.append(((Task) r).getInfo(tab, startTabs + 2, extend));
             else if(r instanceof Group)
-                str.append(((Group) r).getInfo(tab, startTabs + 2, extend, getRunningInfo, true));
+                str.append(((Group) r).getFullInfo(tab, startTabs + 2, extend, getRunningInfo, true));
             else
-                str.append(start + tab.repeat(2) + r.toString());
+                str.append(start + repeat(tab, 2) + r.toString());
         }
 
         return str.toString();
@@ -313,27 +366,49 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param getAllInfo 1
      * @return 1
      */
-    public String getInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
-        String start = tab.repeat(startTabs);
+    public String getFullInfo(String tab, int startTabs, boolean extend, boolean getRunningInfo, boolean getAllInfo){
+        String start = repeat(tab, startTabs);
         StringBuilder str = getBaseInfo(tab, start);
 
 
-        str.append("\n");
-        str.append(start + tab + "All: " + getChildrenAndKeys().size());
+        str.append("\n")
+                .append(start).append(tab).append("All: ").append(getChildrenAndKeys().size());
         if(getAllInfo)
-            str.append(getHashtableInfo(getChildrenAndKeys(), tab, startTabs + 1, extend, getRunningInfo, true));
+            str.append(getMapInfo(getChildrenAndKeys(), tab, startTabs + 1, extend, getRunningInfo, true));
 
-        str.append("\n");
-        str.append(start + tab + "Active: " + activeRunnables.size());
+        str.append("\n").append(start).append(tab).append("Active: ").append(activeRunnables.size());
         if(getRunningInfo)
-            str.append(getHashtableInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
+            str.append(getMapInfo(activeRunnables, tab, startTabs + 1, extend, true, getAllInfo));
 
+        return str.toString();
+    }
+
+    public String getInfo(String tab, int startTabs){
+        return getInfo(repeat(tab, startTabs), tab);
+    }
+
+    public String getInfo(String start, String tab){
+        return start + start + "All:\n" +
+                start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
+                getInfoRecursively(start + repeat(tab, 2), tab, g -> g.getChildrenAndKeys().entrySet()) +
+                "\n" + start + "Active:\n" +
+                start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
+                getInfoRecursively(start + repeat(tab, 2), tab, g -> g.activeRunnables.entrySet());
+    }
+
+    private String getInfoRecursively(String start, String tab, Function<Group, Set<Map.Entry<String, Runnable>>> func){
+        StringBuilder str = new StringBuilder();
+        for (Map.Entry<String, Runnable> entry : func.apply(this)) {
+            str.append(start).append(entry.getKey()).append(": ").append(entry.getValue().getClass().getSimpleName()).append("\n");
+            if(entry.getValue() instanceof Group)
+                str.append(((Group) entry.getValue()).getInfoRecursively(start + tab, tab, func));
+        }
         return str.toString();
     }
 
     @Override
     public String toString() {
-        return getInfo("│\t", 0, false, true, true);
+        return getInfo("","│\t");
     }
 
     //----------Other----------//
@@ -345,7 +420,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         NONE,
         START,
         PAUSE,
-        QUE_PAUSE,
-        QUE_START,
+    }
+
+    public enum AutoManagePolicy{
+        DISABLED,
+        ONLY_WHEN_EMPTY,
+        ALWAYS
     }
 }

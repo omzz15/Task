@@ -3,6 +3,8 @@ package om.self.task.other;
 import om.self.task.core.Group;
 import om.self.task.core.TaskEx;
 
+import java.util.function.Supplier;
+
 /**
  * 1
  */
@@ -47,6 +49,24 @@ public class TimedTask extends TaskEx {
 
         addStep(() -> {startTime = System.currentTimeMillis();});
         addStep(step, () -> (System.currentTimeMillis() - startTime >= time));
+    }
+
+    public void addTimedStep(Runnable step, Supplier<Boolean> end, int time){
+        //sanitize input
+        if(time <= 0 || step == null) return;
+
+        addStep(() -> {startTime = System.currentTimeMillis();});
+        addStep(step, () -> (end.get() || (System.currentTimeMillis() - startTime >= time)));
+    }
+
+    public void addDelay(int delay){
+        addStep(() -> {startTime = System.currentTimeMillis();});
+        addStep(() -> (System.currentTimeMillis() - startTime >= delay));
+    }
+
+    public void addConditionalDelay(int delay, Supplier<Boolean> keepDelaying) {
+        addStep(() -> {startTime = System.currentTimeMillis();});
+        addStep(() -> (System.currentTimeMillis() - startTime >= delay || !keepDelaying.get()));
     }
 
     /**

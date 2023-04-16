@@ -1,7 +1,12 @@
 package om.self.task.core;
 
+import om.self.task.event.EventContainer;
+import om.self.task.event.EventManager;
+
 import java.util.LinkedList;
 import java.util.function.Supplier;
+
+import static org.apache.commons.lang3.StringUtils.repeat;
 
 /**
  * 1
@@ -17,7 +22,9 @@ public class TaskEx extends Task {
     /**
      * 1
      */
-    public boolean autoReset = true;
+    public boolean autoReset = false;
+
+    private boolean waiting = false;
 
 
     //----------CONSTRUCTORS----------//
@@ -76,13 +83,16 @@ public class TaskEx extends Task {
         //auto pause/reset
         if (curr >= steps.size()) {
             done = true;
-            if(autoPause && isParentAttached()) runCommand(Group.Command.QUE_PAUSE);
+            if(autoPause && isParentAttached()) runCommand(Group.Command.PAUSE);
             if(autoReset && curr != 0) reset();
             return;
         }
         super.setRunnable(steps.get(curr));
         end = ends.get(curr);
         currentStep = curr;
+
+        if(waiting)
+            runCommand(Group.Command.PAUSE);
     }
 
     /**
@@ -124,9 +134,8 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
-     *
-     * @param step 1
+     * runs the runnable once then move on to the next step. Equivalent of addStep(Runnable, () -> true)
+     * @param step the thing you want run once
      */
     public void addStep(Runnable step) {
         addStep(step, () -> true);
@@ -138,6 +147,10 @@ public class TaskEx extends Task {
      * @param step 1
      */
     public void addStep(Task step) {
+        addStep(step, step::isDone);
+    }
+
+    public void addStep(Group step) {
         addStep(step, step::isDone);
     }
 
@@ -157,6 +170,62 @@ public class TaskEx extends Task {
         if(steps.size() == 1) {
             onEmptyAddStep();
         }
+    }
+
+    public void addNextStep(Runnable step, Supplier<Boolean> end){
+        addStep(step, end, getCurrentStep() + 1);
+    }
+
+    public void addConcurrentSteps(Runnable... steps){
+        Group g = new Group("concurrent steps");
+        for(int i = 0; i < steps.length; i++){
+            g.attachChild("concurrent " + i, steps[i]);
+        }
+        addStep(g);
+    }
+
+    /**
+     * This will wait for any of the events to complete then remove everything
+     * @param event the event that should trigger this task
+     */
+    public void waitForEvent(EventContainer event){
+        addStep(() -> {
+            getParent().setWaiting(true);
+            waiting = true;
+            event.manager.singleTimeAttachToEvent(event.event, "start task - " + getName(), () -> {
+                getParent().setWaiting(false);
+                waiting = false;
+                runCommand(Group.Command.START);
+                System.out.println("event triggered");
+            });
+            runCommand(Group.Command.PAUSE);
+        });
+    }
+
+    /**
+     * This will wait for any of the events to complete then remove everything and continue
+     * @param events the events that should trigger this task
+     */
+    public void waitForEvents(EventContainer... events){
+        addStep(() -> {
+            getParent().setWaiting(true);
+            for(EventContainer event : events)
+                event.manager.attachToEvent(event.event, "start task - " + getName(), () -> {
+                    getParent().setWaiting(false);
+                    runCommand(Group.Command.START);
+                });
+            runCommand(Group.Command.PAUSE);
+        });
+
+        addStep(() -> {
+            for(EventContainer event : events)
+                event.manager.detachFromEvent(event.event, "start task - " + getName());
+        });
+    }
+
+    public void waitForEvent(String event, EventManager manager, Runnable runnable){
+        addStep(() -> manager.singleTimeAttachToEvent(event, "next step on task - " + getName(), this::setToNextStep));
+        addStep(runnable, () -> false);
     }
 
     /**
@@ -255,7 +324,7 @@ public class TaskEx extends Task {
      */
     @Override
     public String getInfo(String tab, int startTabs, boolean extend) {
-        String start = tab.repeat(startTabs);
+        String start = repeat(tab, startTabs);
         StringBuilder str = getBaseInfo(tab, start);
 
         str.append("\n");
