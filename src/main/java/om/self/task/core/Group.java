@@ -18,6 +18,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
         public static final String forceActiveRunnable = "force active runnable";
         public static final String location = "location";
         public static final String allowMultiRun = "allow multi run";
+        public static final String interrupted = "interrupted";
     }
 
     private String name;
@@ -232,7 +233,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
                 return startRunnable(key, args);
             }
             case PAUSE: {
-                removeFromActive(key);
+                removeFromActive(key, args);
                 if (isParentAttached() && (autoStopPolicy == AutoManagePolicy.ALWAYS || (autoStopPolicy == AutoManagePolicy.ONLY_WHEN_EMPTY && activeRunnables.isEmpty())))
                     return runCommand(Command.PAUSE);
                 return true;
@@ -259,10 +260,23 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
     }
 
     protected void addToActive(String key, Runnable runnable, Map.Entry<String, Object>... args){
-        activeRunnables.put(key, runnable);
+        if(activeRunnables.put(key, runnable) == runnable) //make sure this actually started something
+            return;
+
+        if(runnable instanceof om.self.task.core.Command)
+            ((om.self.task.core.Command)runnable).start();
     }
     protected void removeFromActive(String key, Map.Entry<String, Object>... args){
-        activeRunnables.remove(key);
+        Runnable runnable = activeRunnables.remove(key);
+
+        if(runnable == null) //make sure this actually stopped something
+            return;
+
+        if(runnable instanceof om.self.task.core.Command){
+            boolean interrupted = getArg(CommandVars.interrupted, true, args);
+            ((om.self.task.core.Command)runnable).stop(interrupted);
+        }
+
     }
 
     private boolean startRunnable(String key, Map.Entry<String, Object>... args){
