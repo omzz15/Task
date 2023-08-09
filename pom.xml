@@ -6,7 +6,7 @@
 
     <groupId>io.github.omzz15</groupId>
     <artifactId>task</artifactId>
-    <version>4.2.3-FTCRELEASE</version>
+    <version>4.3.0-FTCRELEASE</version>
 
     <build>
         <plugins>
@@ -86,7 +86,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.5</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>
@@ -139,8 +139,8 @@
     </developers>
 
     <properties>
-        <maven.compiler.source>18</maven.compiler.source>
-        <maven.compiler.target>18</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

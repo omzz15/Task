@@ -11,6 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * A simple example with a command and an incremented task that interrupts the command
+ */
 public class Example {
     public static void main(String[] args) {
         Group main = new Group("main");
@@ -28,9 +31,10 @@ public class Example {
             }
 
             public boolean isFinished(){
-                return true;
+                return false;
             }
         };
+
         command.runCommand(Group.Command.START);
 
         IncrementedTask incrementedTask = new IncrementedTask("incrementedTask", main);

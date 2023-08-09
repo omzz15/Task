@@ -3,11 +3,17 @@ package om.self.task.event;
 import java.util.LinkedList;
 
 /**
- * A way to listen to multiple events
+ * A way to group and listen to multiple events
  */
 public abstract class EventEnvironment {
+    /**
+     * the events this environment is listening to
+     */
     public final LinkedList<EventContainer> events = new LinkedList<>();
 
+    /**
+     * the name of the environment
+     */
     public final String name;
 
     /**
@@ -29,13 +35,17 @@ public abstract class EventEnvironment {
     }
 
     /**
-     *
-     * @return
+     * get the events this environment is listening to
+     * @return {@link #events}
      */
     public LinkedList<EventContainer> getEvents(){
         return events;
     }
 
+    /**
+     * attach events to this environment by creating a trigger for each event
+     * @param events the events to attach
+     */
     public void attachEvents(EventContainer... events){
         for (EventContainer event : events) {
             event.singleTimeAttach("trigger for environment - " + name, () -> onTrigger(event));
@@ -43,6 +53,10 @@ public abstract class EventEnvironment {
         }
     }
 
+    /**
+     * detach events from this environment and removes their triggers
+     * @param events the events to detach
+     */
     public void detachEvents(EventContainer... events){
         for (EventContainer event : events) {
             event.detach("trigger for environment - " + name);
@@ -50,9 +64,16 @@ public abstract class EventEnvironment {
         }
     }
 
+    /**
+     * clear all events from this environment
+     */
     public void clearEnvironment(){
         detachEvents(events.toArray(new EventContainer[0]));
     }
 
+    /**
+     * This is called when one of the events in this environment is triggered
+     * @param event the event that was triggered
+     */
     public abstract void onTrigger(EventContainer event);
 }

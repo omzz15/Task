@@ -3,7 +3,7 @@ package om.self.task.event;
 import java.util.Objects;
 
 /**
- * An easier way to reference and store a specific events(good for cases where you need to deal with many events from different managers, ex: methods parameters)
+ * An easier way to reference and store a specific event (good for cases where you need to deal with many events from different managers, ex: method parameters)
  */
 public class EventContainer {
     /**
@@ -35,7 +35,7 @@ public class EventContainer {
 
     /**
      * attach another runnable to an event
-     * @param runnableName the name of the runnable(must be unique)(used in info and for removing the runnable)
+     * @param runnableName the name of the runnable (must be unique) (used in info and for removing the runnable)
      * @param runnable the runnable to run when event is triggered
      * @see EventManager#attachToEvent(String, String, Runnable)
      */
@@ -45,7 +45,7 @@ public class EventContainer {
 
     /**
      * attach another runnable to an event that will immediately detach
-     * @param runnableName the name of the runnable(must be unique)(used in info and for removing the runnable)
+     * @param runnableName the name of the runnable (must be unique) (used in info and for removing the runnable)
      * @param runnable the runnable to run when event is triggered
      * @see EventManager#singleTimeAttachToEvent(String, String, Runnable)
      */
@@ -54,8 +54,8 @@ public class EventContainer {
     }
 
     /**
-     * detach a runnable from the event
-     * @param runnableName the name of the runnable to detach(set during attach)
+     * detach a Runnable from the event
+     * @param runnableName the name of the runnable to detach(set during {@link #attach(String, Runnable)})
      * @see EventManager#detachFromEvent(String, String)
      */
     public void detach(String runnableName){
@@ -65,7 +65,7 @@ public class EventContainer {
     /**
      * ensure that even different EventContainer objects are equal if the manager and event are the same.
      * @param o the object to check
-     * @return whether the EventContainers store the same information(the instances don't need to match)
+     * @return whether the EventContainers store the same information (the instances don't need to match)
      */
     @Override
     public boolean equals(Object o) {

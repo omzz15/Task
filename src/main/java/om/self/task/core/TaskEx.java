@@ -6,45 +6,63 @@ import om.self.task.event.EventManager;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
-import static org.apache.commons.lang3.StringUtils.repeat;
+import static om.self.task.other.Utils.repeat;
 
 /**
- * 1
+ * An extension of {@link Task} that allows for multiple steps to be added to it.
  */
 public class TaskEx extends Task {
+    /**
+     * This will check if the current step is complete
+     */
     private Supplier<Boolean> end;
+    /**
+     * A list of steps to run in this task
+     */
     private LinkedList<Runnable> steps = new LinkedList<>();
+    /**
+     * A list of checks to run to see if the current step is complete. Each check corresponds to the step at the same index in {@link #steps}.
+     */
     private LinkedList<Supplier<Boolean>> ends = new LinkedList<>();
 
+    /**
+     * The current step this task is on
+     */
     private int currentStep = 0;
+    /**
+     * If the task has been completed (gets reset when the task is reset)
+     */
     private boolean done = false;
 
     /**
-     * 1
+     * Weather the task should automatically reset once it is done
      */
     public boolean autoReset = false;
 
+    /**
+     * Flag to indicate if the task is waiting for an event
+     */
     private boolean waiting = false;
 
 
     //----------CONSTRUCTORS----------//
     /**
-     * Constructor that just sets the name of this currentStep.
+     * Constructor that just sets the name of this task.
      *
-     * @param name the name of this currentStep
+     * @param name the name of this task
      */
     public TaskEx(String name) {
-        super(name);
+        this(name, null, null);
     }
 
     /**
-     * Constructor that sets the name of this currentStep and attaches it to a Group with the key being the same as the name
+     * Constructor that sets the name of this task and attaches it to a Group with the key being the same as the name
      *
-     * @param name   the name of this currentStep
-     * @param parent the Group you want to attach this currentStep to (parentKey will equal name)
+     * @param name   the name of this task
+     * @param parent the Group you want to attach this task to (parentKey will equal name)
      */
     public TaskEx(String name, Group parent) {
-        super(name, parent);
+        this(name, name, parent);
     }
 
     /**
@@ -56,28 +74,22 @@ public class TaskEx extends Task {
      */
     public TaskEx(String name, String parentKey, Group parent) {
         super(name, parentKey, parent);
-    }
-
-    @Override
-    protected void construct(String name, String parentKey, Group parent) {
-        autoPause = true;
-        super.construct(name, parentKey, parent);
+        autoPause = true; //set the new default behavior for TaskEx
     }
 
     //----------GETTERS and SETTERS----------//
     /**
-     * 1
-     *
-     * @return 1
+     * Gets the step this task is currently on
+     * @return {@link #currentStep}
      */
     public int getCurrentStep() {
         return currentStep;
     }
 
     /**
-     * 1
-     *
-     * @param curr 1
+     * set the current step this task is on
+     * (if it is greater than the number of steps then it will set {@link #done} to true and pause the task)
+     * @param curr the step you want to set this task to (0 based index)
      */
     public void setCurrentStep(int curr) {
         //auto pause/reset
@@ -96,9 +108,8 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
-     *
-     * @return 1
+     * Whether this is done
+     * @return {@link #done}
      */
     @Override
     public boolean isDone() {
@@ -107,13 +118,15 @@ public class TaskEx extends Task {
 
     //----------ADD/REMOVE STEP----------//
     /**
-     * 1
+     * Adds a step to this task at the end of the list
+     * @param step the step you want to run
+     * @param end  the check to see if the step is done
      *
-     * @param step 1
-     * @param end  1
+     * @throws IllegalArgumentException if step or end is null
      */
     public void addStep(Runnable step, Supplier<Boolean> end) {
-        if (step == null || end == null) return;
+        if (step == null || end == null)
+            throw new IllegalArgumentException("step and end cannot be null");
 
         steps.add(step);
         ends.add(end);
@@ -124,9 +137,9 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
-     *
-     * @param end 1
+     * Adds a step to this task that just waits for the end condition to be true. Equivalent of addStep(() -> {}, end)
+     * @param end the check to see if the step is done
+     * @see #addStep(Runnable, Supplier)
      */
     public void addStep(Supplier<Boolean> end) {
         addStep(() -> {
@@ -134,32 +147,35 @@ public class TaskEx extends Task {
     }
 
     /**
-     * runs the runnable once then move on to the next step. Equivalent of addStep(Runnable, () -> true)
+     * Adds a step that will run once then move on to the next step. Equivalent of addStep(step, () -> true)
      * @param step the thing you want run once
+     * @see #addStep(Runnable, Supplier)
      */
     public void addStep(Runnable step) {
         addStep(step, () -> true);
     }
 
     /**
-     * 1
-     *
-     * @param step 1
+     * Adds a step that will run a {@link Task} until it is done
+     * @param step the task you want to run
      */
     public void addStep(Task step) {
         addStep(step, step::isDone);
     }
 
+    /**
+     * Adds a step that will run a {@link Group} until it is done
+     * @param step the group you want to run
+     */
     public void addStep(Group step) {
         addStep(step, step::isDone);
     }
 
     /**
-     * 1
-     *
-     * @param step  1
-     * @param end   1
-     * @param index 1
+     * Adds a step to a specific index in the list
+     * @param step  the step you want to run
+     * @param end   the check to see if the step is done
+     * @param index the index you want to add the step at (0 based index)
      */
     public void addStep(Runnable step, Supplier<Boolean> end, int index) {
         if (step == null || end == null) return;
@@ -172,10 +188,19 @@ public class TaskEx extends Task {
         }
     }
 
+    /**
+     * Like {@link #addStep(Runnable, Supplier, int)} but will add it to the step right after this one
+     * @param step the step you want to run
+     * @param end the check to see if the step is done
+     */
     public void addNextStep(Runnable step, Supplier<Boolean> end){
         addStep(step, end, getCurrentStep() + 1);
     }
 
+    /**
+     * It will put all the steps into a group, so they can run concurrently
+     * @param steps the steps you want to run concurrently
+     */
     public void addConcurrentSteps(Runnable... steps){
         Group g = new Group("concurrent steps");
         for(int i = 0; i < steps.length; i++){
@@ -185,32 +210,32 @@ public class TaskEx extends Task {
     }
 
     /**
-     * This will wait for any of the events to complete then remove everything
+     * This will pause the task and wait for an event to complete then resume as a step
      * @param event the event that should trigger this task
      */
     public void waitForEvent(EventContainer event){
         addStep(() -> {
             getParent().setWaiting(true);
             waiting = true;
-            event.manager.singleTimeAttachToEvent(event.event, "start task - " + getName(), () -> {
+            event.attach("start task - " + getName(), () -> {
                 getParent().setWaiting(false);
                 waiting = false;
                 runCommand(Group.Command.START);
-                System.out.println("event triggered");
+                System.out.println("event triggered"); //TODO remove for production 
             });
             runCommand(Group.Command.PAUSE);
         });
     }
 
     /**
-     * This will wait for any of the events to complete then remove everything and continue
+     * This will pause the task and wait for any of the events to complete then remove everything and continue
      * @param events the events that should trigger this task
      */
     public void waitForEvents(EventContainer... events){
         addStep(() -> {
             getParent().setWaiting(true);
             for(EventContainer event : events)
-                event.manager.attachToEvent(event.event, "start task - " + getName(), () -> {
+                event.attach("start task - " + getName(), () -> {
                     getParent().setWaiting(false);
                     runCommand(Group.Command.START);
                 });
@@ -223,8 +248,13 @@ public class TaskEx extends Task {
         });
     }
 
-    public void waitForEvent(String event, EventManager manager, Runnable runnable){
-        addStep(() -> manager.singleTimeAttachToEvent(event, "next step on task - " + getName(), this::setToNextStep));
+    /**
+     * This will keep running the runnable until the event is triggered
+     * @param event the event that should trigger this task
+     * @param runnable the runnable that should be run until the event is triggered
+     */
+    public void waitForEvent(EventContainer event, Runnable runnable){
+        addStep(() -> event.singleTimeAttach("next step on task - " + getName(), this::setToNextStep));
         addStep(runnable, () -> false);
     }
 
@@ -256,7 +286,7 @@ public class TaskEx extends Task {
 
     //----------MANAGE STEPS----------//
     /**
-     * 1
+     * Just sets the current step to the next one
      */
     public void setToNextStep() {
         setCurrentStep(currentStep + 1);
@@ -265,7 +295,7 @@ public class TaskEx extends Task {
 
     //----------ACTIONS----------//
     /**
-     * 1
+     * clears everything from this task and resets it
      */
     public void clear() {
         steps.clear();
@@ -276,7 +306,7 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
+     * reset the task to the first step and set done to false
      */
     public void reset() {
         done = false;
@@ -284,7 +314,8 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
+     * resets the task and starts it <br>
+     * Note: This only works if a parent is attached
      */
     public void restart() {
         reset();
@@ -294,7 +325,8 @@ public class TaskEx extends Task {
 
     //----------OVERRIDE Task METHODS----------//
     /**
-     * 1
+     * Runs the current step and checks if it should go to the next one. <br>
+     * Note: The parent calls this, so you don't need to unless there is no parent.
      */
     @Override
     public void run() {
@@ -304,9 +336,9 @@ public class TaskEx extends Task {
     }
 
     /**
-     * 1
-     *
+     * Throws an error because you can't directly set the runnable with a TaskEx
      * @param runnable the runnable action you want to run
+     * @throws UnsupportedOperationException because you can't directly set the runnable with a TaskEx
      */
     @Override
     public void setRunnable(Runnable runnable) {
@@ -316,11 +348,11 @@ public class TaskEx extends Task {
 
 
     /**
-     * 1
-     *
-     * @param tab       1
-     * @param startTabs 1
-     * @return 1
+     * gets the info for this TaskEx (if it is complete and the current step)
+     * @param tab       the style of the tabs
+     * @param startTabs the number of tabs to start with
+     * @param extend    if it should add extra info (total steps, auto start, auto pause, and auto reset)
+     * @return the info for this TaskEx
      */
     @Override
     public String getInfo(String tab, int startTabs, boolean extend) {
