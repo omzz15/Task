@@ -1,3 +1,5 @@
+package examples;
+
 import om.self.task.core.*;
 import om.self.task.event.EventContainer;
 import om.self.task.event.EventManager;
