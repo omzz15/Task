@@ -1,5 +1,6 @@
 **This is the FTC version of the library, meaning this uses java 8 and has instructions for installing this to an FTC project. For the normal version go [here](https://github.com/omzz15/task)**
 
+[![javadoc](https://javadoc.io/badge2/io.github.omzz15/task/javadoc.svg)](https://javadoc.io/doc/io.github.omzz15/task)
 # Java Task
 
 The Task library is a versatile Java library engineered to streamline the creation and management of tasks using groups,
