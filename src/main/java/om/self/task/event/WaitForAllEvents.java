@@ -3,7 +3,7 @@ package om.self.task.event;
 import java.util.Hashtable;
 
 /**
- * An extension of {@link EventEnvironment} that waits for all events to be triggered before triggering its own event
+ * An extension of {@link EventEnvironment} that waits for all events to be triggered before triggering the {@link #output} event
  */
 public class WaitForAllEvents extends EventEnvironment {
     /**
@@ -38,7 +38,9 @@ public class WaitForAllEvents extends EventEnvironment {
     }
 
     /**
-     * Creates a new WaitForAllEvents with the given name and events
+     * Creates a new WaitForAllEvents with the given name and events. <br>
+     * IMPORTANT:
+     * You must set the output event (using {@link #setOutput(EventContainer)}) before this environment is triggered
      * @param name the name of this
      * @param events the events to wait for
      */

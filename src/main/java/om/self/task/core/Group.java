@@ -11,8 +11,8 @@ import java.util.function.Function;
 import static om.self.task.other.Utils.repeat;
 
 /**
- * A group of runnables. <br>
- * A structural class that stores child runnables (that can include other groups) and can be attached to a parent group. It also manages and runs stored runnables.
+ * This class stores and manages (running when needed) a group of child runnables (which can include other groups as well).
+ * It also acts as a structural class that can be attached to a parent group to create complex and highly flexible structures of groups.
  */
 public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> implements Runnable, NamedStructure<String>{
     /**

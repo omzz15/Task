@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import static om.self.task.other.Utils.repeat;
 
 /**
- * A way to create, store, and trigger events that can have many actions (Runnable) attached to them.
+ * A way to create, store, and trigger events which are just strings that have many actions (Runnable) attached to them that get called when the event is triggered.
  */
 public class EventManager extends KeyedBidirectionalStructure<String, EventManager, EventManager> {
     /**
@@ -22,7 +22,9 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     private final ConcurrentHashMap<String, Hashtable<String, Runnable>> events = new ConcurrentHashMap<>();
 
     /**
-     * the character(technically string) used to separate the event managers when using things like {@link EventManager#getDir()}. It is also used to reference events in child event managers when calling {@link EventManager#triggerEvent(String)}.
+     * The character used to separate the event managers when using things like {@link EventManager#getDir()}.
+     * It is also used
+     * to reference events in child event managers when calling {@link EventManager#triggerEvent(String)}.
      */
     public String dirChar = "/";
 
