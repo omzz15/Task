@@ -33,7 +33,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	private Runnable runnable;
 
 	/**
-	 * if this task automatically starts (put in active runnables) when attached to a group
+	 * if this task automatically starts (put in active runnables) when attached to a group and a Runnable is set
 	 */
 	public boolean autoStart = true;
 	/**
@@ -47,6 +47,20 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	public boolean lockState = false;
 
 	//----------CONSTRUCTORS----------//
+	/**
+	 * Constructor that sets the name of this task, attaches it to a parent Group, then sets the Runnable. <br>
+	 * Note: if {@link #autoStart} is true (which it is by default) then this will automatically start this task as well.
+	 * @param name the name of this task
+	 * @param parent the Group you want to attach this task to (if null, then it won't have a parent)
+	 * @param runnable the Runnable thing that you want contained inside this task
+	 */
+	public Task(String name, Group parent, Runnable runnable){
+		this(name, name, parent);
+		setRunnable(runnable);
+
+		if(logTasks) allTasks.add(this);
+	}
+
 	/**
 	 * Constructor that sets the name of this task and attaches it to a parent Group with the key parentKey
 	 * @param name the name of this task
@@ -75,7 +89,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 * @param name the name of this task
 	 */
 	public Task(String name){
-		this(name, null, null);
+		this(name, "", null);
 	}
 
 

@@ -245,7 +245,13 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      */
     public void triggerEvent(String event){
         if(!event.contains(dirChar)) {
-            getRunnables(event).forEach(Runnable::run);
+            events.getOrDefault(event, new Hashtable<>()).forEach((k,v) -> {
+                try {
+                    v.run();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error while running '" + k + "' in event '" + event + "' at directory '" + getDir() + "'", e);
+                }
+            });
             return;
         }
 
