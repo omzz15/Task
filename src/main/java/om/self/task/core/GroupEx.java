@@ -45,8 +45,14 @@ public class GroupEx extends Group{
      */
     private Runnable getBaseRunFunction(){
         return () -> {
-            while(!queuedGroupActions.isEmpty()) queuedGroupActions.removeFirst().run();
-            activeRunnables.forEach((k, v) -> v.run());
+            runQueuedActions();
+            activeRunnables.forEach((k, v) -> {
+                try{
+                    v.run();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error running '" + k + "' in group '" + getName() + "'", e);
+                }
+            });
         };
     }
 

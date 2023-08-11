@@ -89,6 +89,12 @@ public class OrderedGroup extends Group{
     @Override
     public void run(){
         runQueuedActions();
-        orderedActiveRunnable.forEach(Runnable::run);
+        for(int i = 0; i < orderedActiveRunnable.size(); i++){
+            try {
+                orderedActiveRunnable.get(i).run();
+            } catch (Exception e){
+                throw new RuntimeException("Error running '" + orderedActiveRunnable.get(i) + "' at index " + i + " in ordered group '" + getName() + "'", e);
+            }
+        }
     }
 }
