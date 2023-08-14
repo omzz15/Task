@@ -10,7 +10,7 @@ import static om.self.task.other.Utils.repeat;
 
 /**
  * A simple task that will execute a Runnable with no input or output.
- * Ways to run are using the run() method or attaching to a TaskRunner.
+ * Ways to run are using the run() method or attaching to a Group.
  */
 public class Task extends KeyedParentStructureImpl<String, Group> implements Runnable, NamedStructure<String> {
 	/**
@@ -264,7 +264,7 @@ public class Task extends KeyedParentStructureImpl<String, Group> implements Run
 	 */
 	@Override
 	public String toString(){
-		return getInfo("\t", 0, false);
+		return getInfo("│\t", 0, false);
 	}
 
 

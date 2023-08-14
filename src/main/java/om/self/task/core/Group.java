@@ -7,6 +7,7 @@ import om.self.task.event.EventManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static om.self.task.other.Utils.repeat;
 
@@ -76,6 +77,12 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * but this will not affect auto pause so the group is free to pause if there are no other active runnable
      */
     private boolean waiting = false;
+
+//    /**
+//     * The character used
+//     * to separate the groups when using things like {@link Group#runKeyedCommand(String, Command, Map.Entry[])}.
+//     */
+//    public static String dirChar = "/";
 
     //----------CONSTRUCTOR----------//
     /**
@@ -237,6 +244,16 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
 
     //----------IMPLEMENT Structure methods----------//
 
+
+//    @Override
+//    public Runnable getChild(String key) {
+//
+//        List<String> l = Arrays.stream(key.split(dirChar)).collect(Collectors.toList());
+//        getChild(l.remove(0)).getChild(String.join(dirChar, l));
+//
+//        return super.getChild(key);
+//    }
+
     /**
      * Used to remove the child from active runnables before it is detached <br>
      * IMPORTANT: DO NOT use this method, it is meant to be internal
@@ -282,6 +299,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      */
     public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
         if(getChild(key) instanceof  Task && ((Task)getChild(key)).lockState) return false;
+
         switch (command){
             case START: {
                 if (activeRunnables.size() == maxActiveRunnables) {
@@ -537,7 +555,7 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @return the info for this group and all of its children as a string
      */
     public String getInfo(String start, String tab){
-        return start + start + "All:\n" +
+        return start + "All:\n" +
                 start + tab + getName() + ": " + getClass().getSimpleName() + "(current parent)\n" +
                 getInfoRecursively(start + repeat(tab, 2), tab, g -> g.getChildrenAndKeys().entrySet()) +
                 "\n" + start + "Active:\n" +

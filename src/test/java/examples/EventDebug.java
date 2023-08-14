@@ -15,7 +15,7 @@ public class EventDebug {
         });
 
         //trigger the event
-        subEventManager.triggerEvent("test");
+        mainEventManager.triggerEvent("sub/test");
 
         //the exception will look like this:
         //Exception in thread "main" java.lang.RuntimeException: Error while running 'throw exception' in event 'test' at directory 'main/sub'

@@ -26,7 +26,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      * It is also used
      * to reference events in child event managers when calling {@link EventManager#triggerEvent(String)}.
      */
-    public String dirChar = "/";
+    public static String dirChar = "/";
 
     /**
      * The name of the event manager. Used for identification and to access events by directory from upper event managers
