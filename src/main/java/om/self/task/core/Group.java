@@ -7,7 +7,6 @@ import om.self.task.event.EventManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static om.self.task.other.Utils.repeat;
 
@@ -36,6 +35,11 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
          * Used in {@link om.self.task.core.Command} to tell weather the command was interrupted or stopped on its own
          */
         public static final String interrupted = "interrupted";
+
+        /**
+         * Used in {@link Group} to tell weather to start a group even if {@link #isDone()} returns true(meaning the group is not waiting and there are no active or queued things). If true, the group will always start even if the group is done. If false, it will only start if {@link #isDone()} returns false.
+         */
+        public static final String startWhenDone = "start when done";
     }
 
     /**
@@ -297,8 +301,15 @@ public class Group extends KeyedBidirectionalStructure<String, Group, Runnable> 
      * @param args the arguments to pass to the command
      * @return if the command was run successfully
      */
-    public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args){
-        if(getChild(key) instanceof  Task && ((Task)getChild(key)).lockState) return false;
+    public boolean runKeyedCommand(String key, Command command, Map.Entry<String, Object>... args) {
+        Runnable child = getChild(key);
+        if (child instanceof Task){
+            if (((Task) child).lockState)
+                return false;
+        }
+        else if(child instanceof Group)
+            if (command == Command.START && !getArg(CommandVars.startWhenDone, true, args) && ((Group) child).isDone())
+                return false;
 
         switch (command){
             case START: {
