@@ -6,7 +6,7 @@
 
     <groupId>io.github.omzz15</groupId>
     <artifactId>task</artifactId>
-    <version>4.3.5-FTCRELEASE</version>
+    <version>4.4.0-FTCRELEASE</version>
 
     <build>
         <plugins>
@@ -94,6 +94,12 @@
                         <goals>
                             <goal>sign</goal>
                         </goals>
+<!--                        <configuration>-->
+<!--                            <gpgArguments>-->
+<!--                                <arg>&#45;&#45;pinentry-mode</arg>-->
+<!--                                <arg>loopback</arg>-->
+<!--                            </gpgArguments>-->
+<!--                        </configuration>-->
                     </execution>
                 </executions>
             </plugin>

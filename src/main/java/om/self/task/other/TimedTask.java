@@ -70,7 +70,7 @@ public class TimedTask extends TaskEx {
 
     /**
      * Just {@link #addTimedStep(Runnable, int)} but with no Runnable, so it just waits for the time to pass
-     * @param delay the amount of time to wait
+     * @param delay the amount of time to wait in milliseconds
      */
     public void addDelay(int delay){
         addStep(() -> {startTime = System.currentTimeMillis();});

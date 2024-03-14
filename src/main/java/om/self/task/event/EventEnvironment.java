@@ -48,7 +48,7 @@ public abstract class EventEnvironment {
      */
     public void attachEvents(EventContainer... events){
         for (EventContainer event : events) {
-            event.singleTimeAttach("trigger for environment - " + name, () -> onTrigger(event));
+            event.attach("trigger for environment - " + name, () -> onTrigger(event));
             this.events.add(event);
         }
     }

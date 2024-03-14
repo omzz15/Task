@@ -38,15 +38,13 @@ public class WaitForAllEvents extends EventEnvironment {
     }
 
     /**
-     * Creates a new WaitForAllEvents with the given name and events. <br>
+     * Creates a new empty WaitForAllEvents. <br>
      * IMPORTANT:
-     * You must set the output event (using {@link #setOutput(EventContainer)}) before this environment is triggered
+     * You must set the trigger and output event (using {@link #setOutput(EventContainer)}) before this environment is triggered
      * @param name the name of this
-     * @param events the events to wait for
      */
-    public WaitForAllEvents(String name, EventContainer... events) {
+    public WaitForAllEvents(String name) {
         super(name);
-        attachEvents(events);
     }
 
     /**
@@ -93,7 +91,7 @@ public class WaitForAllEvents extends EventEnvironment {
     }
 
     /**
-     * clears the environment by detaching all events and removing their triggers
+     * Clears the environment by detaching all events and removing their triggers.
      */
     public void clearEnvironment(){
         for (EventContainer event : events) {
@@ -105,6 +103,13 @@ public class WaitForAllEvents extends EventEnvironment {
 
         events.clear();
         eventTriggerTable.clear();
+    }
+
+    /**
+     * Resets the eviornment by setting all events to untriggered.
+     */
+    public void resetEnviornmnet(){
+        eventTriggerTable.keySet().forEach((k) -> eventTriggerTable.put(k, false));
     }
 
     /**

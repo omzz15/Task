@@ -1,6 +1,8 @@
 package om.self.task.event;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * An extension of {@link EventManager} that allows for actions to be run in the order they were attached to an event.
@@ -48,7 +50,7 @@ public class OrderedEventManager extends EventManager{
     @Override
     public void attachToEvent(String event, String runnableName, Runnable runnable) {
         if(!getEvents().containsKey(event)) {
-            getEvents().put(event, new Hashtable<>());
+            getEvents().put(event, new ConcurrentHashMap<>());
             orderedEvents.put(event, new LinkedList<>());
         }
 
@@ -61,11 +63,12 @@ public class OrderedEventManager extends EventManager{
      * @param event the name of the event to attach to
      * @param runnableName the name of the runnable (this may be used later, ex: when detaching from event)
      * @param runnable the runnable that gets run by the event
-     * @param location the location to add the runnable at
+     * @param location the loca        events.get(event).entrySet()
+tion to add the runnable at
      */
     public void attachToEvent(String event, String runnableName, Runnable runnable, int location){
         if(!getEvents().containsKey(event)) {
-            getEvents().put(event, new Hashtable<>());
+            getEvents().put(event, new ConcurrentHashMap<>());
             orderedEvents.put(event, new LinkedList<>());
         }
 
@@ -92,5 +95,31 @@ public class OrderedEventManager extends EventManager{
     public void clearEvent(String event) {
         super.clearEvent(event);
         orderedEvents.remove(event);
+    }
+
+    /**
+     * Runs all runnables attached to the event in the order they were attached.
+     * If the {@link EventManager#dirChar} is in the event then it will try
+     * to find the child event manager and trigger the event there.
+     * If the child event manager can not be found, it will throw an exception,
+     * but if the event can't be found, nothing will happen.
+     * @param event the event to trigger
+     */
+    @Override
+    public void triggerEvent(String event){
+        if(!event.contains(dirChar)) {
+            orderedEvents.getOrDefault(event, new LinkedList<>()).forEach((v) -> {
+                try {
+                    v.run();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error while running '" + v + "' in event '" + event + "' at directory '" + getDir() + "'", e);
+                }
+            });
+            return;
+        }
+
+        List<String> l = Arrays.stream(event.split(dirChar)).collect(Collectors.toList());
+
+        getChild(l.remove(0)).triggerEvent(String.join(dirChar, l));
     }
 }

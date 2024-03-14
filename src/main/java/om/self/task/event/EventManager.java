@@ -19,7 +19,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     /**
      * The events this manager is handling
      */
-    private final ConcurrentHashMap<String, Hashtable<String, Runnable>> events = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Runnable>> events = new ConcurrentHashMap<>();
 
     /**
      * The character used to separate the event managers when using things like {@link EventManager#getDir()}.
@@ -64,7 +64,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      * Gets all the events handled by this event manager
      * @return {@link #events}
      */
-    public ConcurrentHashMap<String, Hashtable<String, Runnable>> getEvents(){
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, Runnable>> getEvents(){
         return events;
     }
 
@@ -115,7 +115,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      */
     public void attachToEvent(String event, String runnableName, Runnable runnable){
         if(!events.containsKey(event))
-            events.put(event, new Hashtable<>());
+            events.put(event, new ConcurrentHashMap<>());
 
         events.get(event).put(runnableName, runnable);
     }
@@ -202,6 +202,12 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      * @param event the name of the event to trigger
      */
     public void triggerEventRecursively(String event){
+        if(event.contains(dirChar)){
+            List<String> l = Arrays.stream(event.split(dirChar)).collect(Collectors.toList());
+            getChild(l.remove(0)).triggerEventRecursively(String.join(dirChar, l));
+            return;
+        }
+
         getChildren().forEach(child -> child.triggerEventRecursively(event));
         triggerEvent(event);
     }
@@ -222,7 +228,14 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      * @param maxLevel the maximum number of levels to go down
      */
     public void triggerEventRecursively(String event, int maxLevel){
+        if(event.contains(dirChar)){
+            List<String> l = Arrays.stream(event.split(dirChar)).collect(Collectors.toList());
+            getChild(l.remove(0)).triggerEventRecursively(String.join(dirChar, l), maxLevel);
+            return;
+        }
+        
         if(maxLevel <= 0) return;
+        
         getChildren().forEach(child -> child.triggerEventRecursively(event, maxLevel - 1));
         triggerEvent(event);
     }
@@ -247,7 +260,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
      */
     public void triggerEvent(String event){
         if(!event.contains(dirChar)) {
-            events.getOrDefault(event, new Hashtable<>()).forEach((k,v) -> {
+            events.getOrDefault(event, new ConcurrentHashMap<>()). forEach((k,v) -> {
                 try {
                     v.run();
                 } catch (Exception e) {
@@ -323,7 +336,7 @@ public class EventManager extends KeyedBidirectionalStructure<String, EventManag
     public String getInfo(String start, String tab){
         StringBuilder str = new StringBuilder(start);
         str.append(getName()).append(": EventManager").append("(dir: ").append(getDir()).append(")\n");
-        for (Map.Entry<String, Hashtable<String, Runnable>> event: events.entrySet()) {
+        for (Map.Entry<String, ConcurrentHashMap<String, Runnable>> event: events.entrySet()) {
             str.append(start).append(tab).append(event.getKey()).append(": Event\n");
             for(String runnable : event.getValue().keySet())
                 str.append(start).append(repeat(tab, 2)).append(runnable).append(": Runnable\n");

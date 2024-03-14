@@ -1,7 +1,8 @@
 package om.self.task.core;
 
+import om.self.task.core.Group.Command;
 import om.self.task.event.EventContainer;
-import om.self.task.event.EventManager;
+import om.self.task.event.EventEnvironment;
 
 import java.util.LinkedList;
 import java.util.function.Supplier;
@@ -19,11 +20,11 @@ public class TaskEx extends Task {
     /**
      * A list of steps to run in this task
      */
-    private LinkedList<Runnable> steps = new LinkedList<>();
+    private final LinkedList<Runnable> steps = new LinkedList<>();
     /**
      * A list of checks to run to see if the current step is complete. Each check corresponds to the step at the same index in {@link #steps}.
      */
-    private LinkedList<Supplier<Boolean>> ends = new LinkedList<>();
+    private final LinkedList<Supplier<Boolean>> ends = new LinkedList<>();
 
     /**
      * The current step this task is on
@@ -201,10 +202,11 @@ public class TaskEx extends Task {
      * It will put all the steps into a group, so they can run concurrently
      * @param steps the steps you want to run concurrently
      */
-    public void addConcurrentSteps(Runnable... steps){
+    public void addConcurrentSteps(Task... steps){
         Group g = new Group("concurrent steps");
-        for(int i = 0; i < steps.length; i++){
-            g.attachChild("concurrent " + i, steps[i]);
+        for (Task t : steps) {
+            t.attachParent(g);
+            t.runCommand(Command.START);
         }
         addStep(g);
     }
@@ -217,11 +219,10 @@ public class TaskEx extends Task {
         addStep(() -> {
             getParent().setWaiting(true);
             waiting = true;
-            event.attach("start task - " + getName(), () -> {
+            event.singleTimeAttach("start task - " + getName(), () -> {
                 getParent().setWaiting(false);
                 waiting = false;
                 runCommand(Group.Command.START);
-                System.out.println("event triggered"); //TODO remove for production 
             });
             runCommand(Group.Command.PAUSE);
         });
@@ -232,19 +233,18 @@ public class TaskEx extends Task {
      * @param events the events that should trigger this task
      */
     public void waitForEvents(EventContainer... events){
-        addStep(() -> {
-            getParent().setWaiting(true);
-            for(EventContainer event : events)
-                event.attach("start task - " + getName(), () -> {
-                    getParent().setWaiting(false);
-                    runCommand(Group.Command.START);
-                });
-            runCommand(Group.Command.PAUSE);
-        });
+        new EventEnvironment("wait env", events) {
+            @Override
+            public void onTrigger(EventContainer event) {
+                getParent().setWaiting(false);
+                runCommand(Group.Command.START);
+                clearEnvironment();
+            }
+        };
 
         addStep(() -> {
-            for(EventContainer event : events)
-                event.manager.detachFromEvent(event.event, "start task - " + getName());
+            getParent().setWaiting(true);
+            runCommand(Group.Command.PAUSE);
         });
     }
 
@@ -360,20 +360,20 @@ public class TaskEx extends Task {
         StringBuilder str = getBaseInfo(tab, start);
 
         str.append("\n");
-        str.append(start + tab + "Completed: " + done);
+        str.append(start).append(tab).append("Completed: ").append(done);
 
         str.append("\n");
-        str.append(start + tab + "Current Step: " + (currentStep + 1));
+        str.append(start).append(tab).append("Current Step: ").append(currentStep + 1);
 
         if(extend) {
             str.append("\n");
-            str.append(start + tab + "Total Steps: " + steps.size());
+            str.append(start).append(tab).append("Total Steps: ").append(steps.size());
             str.append("\n");
-            str.append(start + tab + "Auto Start: " + autoStart);
+            str.append(start).append(tab).append("Auto Start: ").append(autoStart);
             str.append("\n");
-            str.append(start + tab + "Auto Pause: " + autoPause);
+            str.append(start).append(tab).append("Auto Pause: ").append(autoPause);
             str.append("\n");
-            str.append(start + tab + "Auto Reset: " + autoReset);
+            str.append(start).append(tab).append("Auto Reset: ").append(autoReset);
         }
         return str.toString();
     }

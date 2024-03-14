@@ -1,50 +1,23 @@
 package examples;
 
-import om.self.task.core.*;
-import om.self.task.event.EventContainer;
 import om.self.task.event.EventManager;
-import om.self.task.event.WaitForAllEvents;
-import om.self.task.other.IncrementedTask;
-import om.self.task.other.TimedTask;
-
-import java.sql.Time;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import om.self.task.event.OrderedEventManager;
 
 /**
  * A simple example with a command and an incremented task that interrupts the command
  */
 public class Example {
     public static void main(String[] args) {
-        Group main = new Group("main");
-        Command command = new Command("command", main){
-            public void onRun() {
-                System.out.println("command run");
-            }
+        EventManager em = new OrderedEventManager("main");
 
-            public void start(){
-                System.out.println("command start");
-            }
+        final String TEST = "TEST2";
 
-            public void stop(boolean isInterrupted){
-                System.out.println("command stop: " + isInterrupted);
-            }
+        em.attachToEvent(TEST, "info", () -> System.out.println("event triggered!"));
+        em.attachToEvent(TEST, "info 2", () -> System.out.println("event triggered 2!"));
+        em.attachToEvent(TEST, "info", () -> System.out.println("event triggered 3!"));
+        em.attachToEvent("TEST", "info", () -> em.clearEvent("TEST2"));
 
-            public boolean isFinished(){
-                return false;
-            }
-        };
-
-        command.runCommand(Group.Command.START);
-
-        IncrementedTask incrementedTask = new IncrementedTask("incrementedTask", main);
-        incrementedTask.addIncrementedStep(()->{}, 100);
-        incrementedTask.addStep(()->command.runCommand(Group.Command.PAUSE));
-
-        while (!main.isDone()) {
-            main.run();
-        }
+//        em.triggerEvent("TEST");
+        em.triggerEvent(TEST);
     }
 }

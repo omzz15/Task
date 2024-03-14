@@ -1,29 +1,23 @@
 package examples;
 
 import om.self.task.core.Group;
-import om.self.task.core.TaskEx;
-import om.self.task.event.EventManager;
-import om.self.task.other.Utils;
+import om.self.task.core.OrderedGroup;
+import om.self.task.core.Task;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class Test {
-
-    private static String getDir(){
-        return "robot/drive";
-    }
     public static void main(String[] args) {
-        Group main = new Group("main");
-        Group taskManager = new Group("task manager", main);
-        taskManager.attachChild("test 1", () -> {});
-        new TaskEx("test 2", taskManager).addStep(() -> {}, () -> false);
+//        Group main = new OrderedGroup("main");
+//        Task t1 = new Task("test1", main, () -> System.out.println("t1"));
+//        Task t2 = new Task("test2", main, () -> System.out.println("t2"));
+//        Task t3 = new Task("test3", main, () -> System.out.println("t3"));
+//        Task t4 = new Task("test4", main, () -> System.out.println("t4"));
+//        Task t5 = new Task("test5", main, () -> System.out.println("t5"));
+//
+//
+//        while(!main.isDone()){
+//            main.run();
+//        }
 
-//        taskManager.runCommand(Group.Command.START, new AbstractMap.SimpleEntry<>(Group.CommandVars.startWhenDone, false));
-        System.out.println(main);
     }
-
 }
